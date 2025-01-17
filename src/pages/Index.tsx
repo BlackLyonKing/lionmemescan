@@ -32,6 +32,7 @@ const Index = () => {
             graduated: false,
             socialScore: 85,
             meta: ["pepe", "wojak"],
+            bundledBuys: 3,
           },
           // Add more mock data as needed
         ];
@@ -90,6 +91,7 @@ const Index = () => {
             graduated: false,
             socialScore: 85,
             meta: ["pepe", "wojak"],
+            bundledBuys: 3,
           },
           // Add more mock data as needed
         ];

@@ -10,4 +10,5 @@ export interface Memecoin {
   meta: string[];
   contractAddress?: string;
   chainId?: number;
+  bundledBuys?: number;
 }

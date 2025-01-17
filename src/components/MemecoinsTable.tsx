@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Memecoin } from '@/types/memecoin';
-import { ExternalLink, ArrowUpDown } from 'lucide-react';
+import { ExternalLink, ArrowUpDown, AlertTriangle } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -18,6 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface MemecoinsTableProps {
   coins: Memecoin[];
@@ -32,6 +37,7 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
     minMarketCap: '',
     maxMarketCap: '',
     minSocialScore: '',
+    minBundledBuys: '',
   });
 
   const handleSort = (field: keyof Memecoin) => {
@@ -50,8 +56,9 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
     const marketCapMatch = (!filters.minMarketCap || coin.marketCap >= Number(filters.minMarketCap)) &&
                          (!filters.maxMarketCap || coin.marketCap <= Number(filters.maxMarketCap));
     const socialScoreMatch = !filters.minSocialScore || coin.socialScore >= Number(filters.minSocialScore);
+    const bundledBuysMatch = !filters.minBundledBuys || (coin.bundledBuys || 0) >= Number(filters.minBundledBuys);
 
-    return nameMatch && dexStatusMatch && marketCapMatch && socialScoreMatch;
+    return nameMatch && dexStatusMatch && marketCapMatch && socialScoreMatch && bundledBuysMatch;
   });
 
   const sortedCoins = [...filteredCoins].sort((a, b) => {
@@ -73,7 +80,7 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="glass-card p-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="glass-card p-4 grid grid-cols-1 md:grid-cols-5 gap-4">
         <div>
           <label className="text-sm font-medium mb-2 block">Search</label>
           <Input
@@ -124,6 +131,25 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
             onChange={(e) => setFilters({ ...filters, minSocialScore: e.target.value })}
           />
         </div>
+        <div>
+          <label className="text-sm font-medium mb-2 flex items-center gap-2">
+            Min Bundled Buys
+            <Tooltip>
+              <TooltipTrigger>
+                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">Higher number of bundled buys may indicate suspicious trading activity</p>
+              </TooltipContent>
+            </Tooltip>
+          </label>
+          <Input
+            type="number"
+            placeholder="Min bundled buys"
+            value={filters.minBundledBuys}
+            onChange={(e) => setFilters({ ...filters, minBundledBuys: e.target.value })}
+          />
+        </div>
       </div>
 
       <div className="glass-card p-4">
@@ -143,6 +169,9 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
               <TableHead>Meta Tags</TableHead>
               <TableHead onClick={() => handleSort('socialScore')} className="cursor-pointer hover:text-primary">
                 Social Score <ArrowUpDown className="inline h-4 w-4 ml-1" />
+              </TableHead>
+              <TableHead onClick={() => handleSort('bundledBuys')} className="cursor-pointer hover:text-primary">
+                Bundled Buys <ArrowUpDown className="inline h-4 w-4 ml-1" />
               </TableHead>
               <TableHead>Token Page</TableHead>
             </TableRow>
@@ -179,6 +208,23 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
                       style={{ width: `${coin.socialScore}%` }}
                     />
                   </div>
+                </TableCell>
+                <TableCell>
+                  {coin.bundledBuys !== undefined && (
+                    <div className="flex items-center gap-2">
+                      {coin.bundledBuys}
+                      {coin.bundledBuys > 5 && (
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>High number of bundled buys detected</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  )}
                 </TableCell>
                 <TableCell>
                   {coin.threadUrl && (
