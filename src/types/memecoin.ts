@@ -8,4 +8,6 @@ export interface Memecoin {
   graduated: boolean;
   socialScore: number;
   meta: string[];
+  contractAddress?: string;
+  chainId?: number;
 }

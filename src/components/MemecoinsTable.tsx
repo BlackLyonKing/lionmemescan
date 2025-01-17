@@ -9,10 +9,22 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Memecoin } from '@/types/memecoin';
+import { ExternalLink } from 'lucide-react';
 
 interface MemecoinsTableProps {
   coins: Memecoin[];
 }
+
+const getExplorerUrl = (chainId: number, contractAddress: string) => {
+  switch (chainId) {
+    case 1: // Ethereum
+      return `https://etherscan.io/token/${contractAddress}`;
+    case 56: // BSC
+      return `https://bscscan.com/token/${contractAddress}`;
+    default:
+      return `https://etherscan.io/token/${contractAddress}`;
+  }
+};
 
 export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
   const [sortField, setSortField] = useState<keyof Memecoin>('marketCap');
@@ -49,6 +61,7 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
             <TableHead>DEX Status</TableHead>
             <TableHead>Meta Tags</TableHead>
             <TableHead onClick={() => handleSort('socialScore')} className="cursor-pointer">Social Score</TableHead>
+            <TableHead>Contract</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -83,6 +96,18 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
                     style={{ width: `${coin.socialScore}%` }}
                   />
                 </div>
+              </TableCell>
+              <TableCell>
+                {coin.contractAddress && coin.chainId && (
+                  <a
+                    href={getExplorerUrl(coin.chainId, coin.contractAddress)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-crypto-purple hover:text-crypto-cyan transition-colors"
+                  >
+                    View <ExternalLink size={16} />
+                  </a>
+                )}
               </TableCell>
             </TableRow>
           ))}
