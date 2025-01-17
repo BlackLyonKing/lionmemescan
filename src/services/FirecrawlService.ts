@@ -1,7 +1,8 @@
-import { CrawlResponse, CrawlStatusResponse } from '@/types/crawl';
+import { CrawlResponse } from '@/types/crawl';
 
 export class FirecrawlService {
-  private static getStorageKeyForWallet(key: string, walletAddress?: string | null): string {
+  // Make this method public so it can be accessed from components
+  static getStorageKeyForWallet(key: string, walletAddress?: string | null): string {
     return walletAddress ? `firecrawl_${key}_${walletAddress}` : `firecrawl_${key}`;
   }
 
@@ -9,9 +10,14 @@ export class FirecrawlService {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 30);
     
+    const storageData = {
+      key: apiKey,
+      expiresAt: expiresAt.toISOString()
+    };
+    
     localStorage.setItem(
       this.getStorageKeyForWallet('api_key', walletAddress),
-      JSON.stringify({ key: apiKey, expiresAt: expiresAt.toISOString() })
+      JSON.stringify(storageData)
     );
 
     // Add to previous keys if not already present
@@ -27,16 +33,21 @@ export class FirecrawlService {
   }
 
   static getApiKey(walletAddress?: string | null): string | null {
-    const storedData = localStorage.getItem(this.getStorageKeyForWallet('api_key', walletAddress));
-    if (!storedData) return null;
+    try {
+      const storedData = localStorage.getItem(this.getStorageKeyForWallet('api_key', walletAddress));
+      if (!storedData) return null;
 
-    const { key, expiresAt } = JSON.parse(storedData);
-    if (new Date(expiresAt) < new Date()) {
-      this.unlinkApiKey(walletAddress);
+      const { key, expiresAt } = JSON.parse(storedData);
+      if (new Date(expiresAt) < new Date()) {
+        this.unlinkApiKey(walletAddress);
+        return null;
+      }
+
+      return key;
+    } catch (error) {
+      console.error('Error parsing API key from localStorage:', error);
       return null;
     }
-
-    return key;
   }
 
   static unlinkApiKey(walletAddress?: string | null): void {
@@ -44,32 +55,40 @@ export class FirecrawlService {
   }
 
   static getPreviousKeys(walletAddress?: string | null): string[] {
-    const storedKeys = localStorage.getItem(this.getStorageKeyForWallet('previous_keys', walletAddress));
-    return storedKeys ? JSON.parse(storedKeys) : [];
+    try {
+      const storedKeys = localStorage.getItem(this.getStorageKeyForWallet('previous_keys', walletAddress));
+      return storedKeys ? JSON.parse(storedKeys) : [];
+    } catch (error) {
+      console.error('Error parsing previous keys from localStorage:', error);
+      return [];
+    }
   }
 
-  static async crawlUrl(url: string): Promise<CrawlResponse> {
+  static async crawlPumpFun(): Promise<CrawlResponse> {
     // Return sample data for demonstration
     return {
-      success: true as const,
+      success: true,
       status: "completed",
       completed: 1,
       total: 1,
       creditsUsed: 1,
       expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       data: [{
-        name: "BONK",
-        symbol: "BONK",
-        marketCap: 1000000,
-        threadUrl: "https://example.com",
+        name: "Sample Coin",
+        symbol: "SAMPLE",
+        marketCap: 15000,
+        threadUrl: "https://pump.fun/thread/123",
         threadComments: 150,
         dexStatus: "paid",
-        meta: ["trending", "new"],
+        graduated: false,
         socialScore: 85,
-        bundledBuys: 1,
+        meta: ["pepe", "wojak", "fart"],
+        bundledBuys: 3,
         creatorRisk: {
-          previousScams: false
-        }
+          previousScams: 2,
+          riskLevel: "high",
+          lastScamDate: "2024-01-15",
+        },
       }]
     };
   }
