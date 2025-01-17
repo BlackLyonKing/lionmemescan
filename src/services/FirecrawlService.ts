@@ -23,7 +23,6 @@ interface CrawlStatusResponse {
 
 type CrawlResponse = CrawlStatusResponse | ErrorResponse;
 
-// Mock FirecrawlApp implementation since we can't access the actual package
 class MockFirecrawlApp implements FirecrawlApp {
   private apiKey: string;
 
@@ -33,7 +32,6 @@ class MockFirecrawlApp implements FirecrawlApp {
 
   async crawlUrl(url: string, options: any): Promise<CrawlResponse> {
     console.log('Mock crawling URL:', url, 'with options:', options);
-    // Simulate API response
     return {
       success: true,
       status: 'completed',
@@ -48,22 +46,48 @@ class MockFirecrawlApp implements FirecrawlApp {
 
 export class FirecrawlService {
   private static API_KEY_STORAGE_KEY = 'firecrawl_api_key';
+  private static API_KEY_EXPIRY_KEY = 'firecrawl_api_key_expiry';
   private static firecrawlApp: FirecrawlApp | null = null;
 
   static saveApiKey(apiKey: string): void {
+    // Set expiry to 30 minutes from now
+    const expiryTime = new Date();
+    expiryTime.setMinutes(expiryTime.getMinutes() + 30);
+    
     localStorage.setItem(this.API_KEY_STORAGE_KEY, apiKey);
+    localStorage.setItem(this.API_KEY_EXPIRY_KEY, expiryTime.toISOString());
     this.firecrawlApp = new MockFirecrawlApp({ apiKey });
-    console.log('API key saved successfully');
+    console.log('API key saved successfully with expiry:', expiryTime);
   }
 
   static getApiKey(): string | null {
-    return localStorage.getItem(this.API_KEY_STORAGE_KEY);
+    const apiKey = localStorage.getItem(this.API_KEY_STORAGE_KEY);
+    const expiry = localStorage.getItem(this.API_KEY_EXPIRY_KEY);
+
+    if (!apiKey || !expiry) {
+      return null;
+    }
+
+    // Check if the API key has expired
+    if (new Date(expiry) < new Date()) {
+      this.unlinkApiKey();
+      return null;
+    }
+
+    return apiKey;
+  }
+
+  static unlinkApiKey(): void {
+    localStorage.removeItem(this.API_KEY_STORAGE_KEY);
+    localStorage.removeItem(this.API_KEY_EXPIRY_KEY);
+    this.firecrawlApp = null;
+    console.log('API key unlinked successfully');
   }
 
   static async crawlPumpFun(): Promise<{ success: boolean; error?: string; data?: any }> {
     const apiKey = this.getApiKey();
     if (!apiKey) {
-      return { success: false, error: 'API key not found' };
+      return { success: false, error: 'API key not found or expired' };
     }
 
     try {
