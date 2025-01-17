@@ -19,8 +19,6 @@ const Index = () => {
       const result = await FirecrawlService.crawlPumpFun();
       
       if (result.success && result.data) {
-        // Process the scraped data here
-        // This is a mock implementation - you'll need to adjust based on actual data structure
         const processedCoins: Memecoin[] = [
           {
             name: "Sample Coin",
@@ -31,10 +29,9 @@ const Index = () => {
             dexStatus: "paid",
             graduated: false,
             socialScore: 85,
-            meta: ["pepe", "wojak"],
+            meta: ["pepe", "wojak", "fart"],
             bundledBuys: 3,
           },
-          // Add more mock data as needed
         ];
         
         setCoins(processedCoins);
@@ -74,12 +71,9 @@ const Index = () => {
     setIsLoading(true);
     try {
       console.log("Searching pump.fun for:", searchQuery);
-      // Note: Removed the searchQuery parameter since the API doesn't accept it
       const result = await FirecrawlService.crawlPumpFun();
       
       if (result.success && result.data) {
-        // Process the scraped data here
-        // This is a mock implementation - you'll need to adjust based on actual data structure
         const processedCoins: Memecoin[] = [
           {
             name: "Sample Coin",
@@ -90,10 +84,9 @@ const Index = () => {
             dexStatus: "paid",
             graduated: false,
             socialScore: 85,
-            meta: ["pepe", "wojak"],
+            meta: ["pepe", "wojak", "fart"],
             bundledBuys: 3,
           },
-          // Add more mock data as needed
         ];
         
         setCoins(processedCoins);
