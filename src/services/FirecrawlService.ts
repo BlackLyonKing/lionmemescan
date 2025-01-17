@@ -32,15 +32,35 @@ class MockFirecrawlApp implements FirecrawlApp {
 
   async crawlUrl(url: string, options: any): Promise<CrawlResponse> {
     console.log('Mock crawling URL:', url, 'with options:', options);
-    return {
+    
+    // Return sample data
+    const sampleData = {
       success: true,
       status: 'completed',
       completed: 100,
       total: 100,
       creditsUsed: 1,
       expiresAt: new Date().toISOString(),
-      data: []
+      data: [{
+        name: "BONK",
+        symbol: "BONK",
+        marketCap: 750000,
+        threadUrl: "https://pump.fun/thread/bonk123",
+        threadComments: 324,
+        dexStatus: "paid",
+        graduated: false,
+        socialScore: 92,
+        meta: ["dog", "meme", "solana"],
+        bundledBuys: 1,
+        creatorRisk: {
+          previousScams: 0,
+          riskLevel: "low",
+          lastScamDate: null
+        }
+      }]
     };
+
+    return sampleData;
   }
 }
 
@@ -132,7 +152,7 @@ export class FirecrawlService {
       console.log('Crawl successful:', crawlResponse);
       return { 
         success: true,
-        data: crawlResponse 
+        data: crawlResponse.data 
       };
     } catch (error) {
       console.error('Error during crawl:', error);
