@@ -5,9 +5,11 @@ import { useToast } from "@/components/ui/use-toast";
 import { FirecrawlService } from '@/services/FirecrawlService';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useWallet } from '@solana/wallet-adapter-react';
 
 export const ApiKeyForm = () => {
   const { toast } = useToast();
+  const { publicKey } = useWallet();
   const [apiKey, setApiKey] = useState('');
   const [hasActiveKey, setHasActiveKey] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -17,7 +19,7 @@ export const ApiKeyForm = () => {
   useEffect(() => {
     // Check if there's an active API key and load previous keys
     const checkApiKey = () => {
-      const currentKey = FirecrawlService.getApiKey();
+      const currentKey = FirecrawlService.getApiKey(publicKey?.toString());
       setHasActiveKey(!!currentKey);
       if (currentKey) {
         // Mask the API key for display
@@ -28,7 +30,7 @@ export const ApiKeyForm = () => {
       }
       
       // Load previous keys from localStorage
-      const storedKeys = FirecrawlService.getPreviousKeys();
+      const storedKeys = FirecrawlService.getPreviousKeys(publicKey?.toString());
       setPreviousKeys(storedKeys);
     };
 
@@ -37,11 +39,11 @@ export const ApiKeyForm = () => {
     const interval = setInterval(checkApiKey, 60000); // Check every minute
 
     return () => clearInterval(interval);
-  }, []);
+  }, [publicKey]); // Add publicKey to dependency array
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    FirecrawlService.saveApiKey(apiKey);
+    FirecrawlService.saveApiKey(apiKey, publicKey?.toString());
     toast({
       title: "Success",
       description: "API key saved successfully (valid for 30 minutes)",
@@ -53,11 +55,11 @@ export const ApiKeyForm = () => {
     // Update the active key display and previous keys list
     const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
     setActiveKey(maskedKey);
-    setPreviousKeys(FirecrawlService.getPreviousKeys());
+    setPreviousKeys(FirecrawlService.getPreviousKeys(publicKey?.toString()));
   };
 
   const handleUnlink = () => {
-    FirecrawlService.unlinkApiKey();
+    FirecrawlService.unlinkApiKey(publicKey?.toString());
     toast({
       title: "Success",
       description: "API key unlinked successfully",
@@ -69,13 +71,13 @@ export const ApiKeyForm = () => {
 
   const handleToggleSave = (checked: boolean) => {
     setSaveToList(checked);
-    const currentKey = FirecrawlService.getApiKey();
+    const currentKey = FirecrawlService.getApiKey(publicKey?.toString());
     if (checked && currentKey) {
       // Add to saved keys list
       const maskedKey = `${currentKey.substring(0, 4)}...${currentKey.substring(currentKey.length - 4)}`;
       if (!previousKeys.includes(maskedKey)) {
         const newKeys = [maskedKey, ...previousKeys];
-        localStorage.setItem('firecrawl_previous_keys', JSON.stringify(newKeys));
+        localStorage.setItem(FirecrawlService.getStorageKeyForWallet('previous_keys', publicKey?.toString()), JSON.stringify(newKeys));
         setPreviousKeys(newKeys);
         toast({
           title: "Success",

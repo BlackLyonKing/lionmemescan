@@ -1,165 +1,76 @@
-interface FirecrawlConfig {
-  apiKey: string;
-}
+import { CrawlResponse, CrawlStatusResponse } from '@/types/crawl';
 
-interface FirecrawlApp {
-  crawlUrl: (url: string, options: any) => Promise<CrawlResponse>;
-}
-
-interface ErrorResponse {
-  success: false;
-  error: string;
-}
-
-interface CrawlStatusResponse {
-  success: true;
-  status: string;
-  completed: number;
-  total: number;
-  creditsUsed: number;
-  expiresAt: string;
-  data: any[];
-}
-
-type CrawlResponse = CrawlStatusResponse | ErrorResponse;
-
-class MockFirecrawlApp implements FirecrawlApp {
-  private apiKey: string;
-
-  constructor(config: FirecrawlConfig) {
-    this.apiKey = config.apiKey;
+export class FirecrawlService {
+  private static getStorageKeyForWallet(key: string, walletAddress?: string | null): string {
+    return walletAddress ? `firecrawl_${key}_${walletAddress}` : `firecrawl_${key}`;
   }
 
-  async crawlUrl(url: string, options: any): Promise<CrawlResponse> {
-    console.log('Mock crawling URL:', url, 'with options:', options);
+  static saveApiKey(apiKey: string, walletAddress?: string | null): void {
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
     
-    // Return sample data
-    const sampleData = {
-      success: true,
-      status: 'completed',
-      completed: 100,
-      total: 100,
+    localStorage.setItem(
+      this.getStorageKeyForWallet('api_key', walletAddress),
+      JSON.stringify({ key: apiKey, expiresAt: expiresAt.toISOString() })
+    );
+
+    // Add to previous keys if not already present
+    const previousKeys = this.getPreviousKeys(walletAddress);
+    const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
+    if (!previousKeys.includes(maskedKey)) {
+      previousKeys.unshift(maskedKey);
+      localStorage.setItem(
+        this.getStorageKeyForWallet('previous_keys', walletAddress),
+        JSON.stringify(previousKeys)
+      );
+    }
+  }
+
+  static getApiKey(walletAddress?: string | null): string | null {
+    const storedData = localStorage.getItem(this.getStorageKeyForWallet('api_key', walletAddress));
+    if (!storedData) return null;
+
+    const { key, expiresAt } = JSON.parse(storedData);
+    if (new Date(expiresAt) < new Date()) {
+      this.unlinkApiKey(walletAddress);
+      return null;
+    }
+
+    return key;
+  }
+
+  static unlinkApiKey(walletAddress?: string | null): void {
+    localStorage.removeItem(this.getStorageKeyForWallet('api_key', walletAddress));
+  }
+
+  static getPreviousKeys(walletAddress?: string | null): string[] {
+    const storedKeys = localStorage.getItem(this.getStorageKeyForWallet('previous_keys', walletAddress));
+    return storedKeys ? JSON.parse(storedKeys) : [];
+  }
+
+  static async crawlUrl(url: string): Promise<CrawlResponse> {
+    // Return sample data for demonstration
+    return {
+      success: true as const,
+      status: "completed",
+      completed: 1,
+      total: 1,
       creditsUsed: 1,
-      expiresAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       data: [{
         name: "BONK",
         symbol: "BONK",
-        marketCap: 750000,
-        threadUrl: "https://pump.fun/thread/bonk123",
-        threadComments: 324,
+        marketCap: 1000000,
+        threadUrl: "https://example.com",
+        threadComments: 150,
         dexStatus: "paid",
-        graduated: false,
-        socialScore: 92,
-        meta: ["dog", "meme", "solana"],
+        meta: ["trending", "new"],
+        socialScore: 85,
         bundledBuys: 1,
         creatorRisk: {
-          previousScams: 0,
-          riskLevel: "low",
-          lastScamDate: null
+          previousScams: false
         }
       }]
     };
-
-    return sampleData;
-  }
-}
-
-export class FirecrawlService {
-  private static API_KEY_STORAGE_KEY = 'firecrawl_api_key';
-  private static API_KEY_EXPIRY_KEY = 'firecrawl_api_key_expiry';
-  private static PREVIOUS_KEYS_STORAGE_KEY = 'firecrawl_previous_keys';
-  private static firecrawlApp: FirecrawlApp | null = null;
-
-  static saveApiKey(apiKey: string): void {
-    // Set expiry to 30 minutes from now
-    const expiryTime = new Date();
-    expiryTime.setMinutes(expiryTime.getMinutes() + 30);
-    
-    localStorage.setItem(this.API_KEY_STORAGE_KEY, apiKey);
-    localStorage.setItem(this.API_KEY_EXPIRY_KEY, expiryTime.toISOString());
-    
-    // Save to previous keys (masked)
-    const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
-    const previousKeys = this.getPreviousKeys();
-    if (!previousKeys.includes(maskedKey)) {
-      previousKeys.unshift(maskedKey); // Add to beginning of array
-      if (previousKeys.length > 5) { // Keep only last 5 keys
-        previousKeys.pop();
-      }
-      localStorage.setItem(this.PREVIOUS_KEYS_STORAGE_KEY, JSON.stringify(previousKeys));
-    }
-    
-    this.firecrawlApp = new MockFirecrawlApp({ apiKey });
-    console.log('API key saved successfully with expiry:', expiryTime);
-  }
-
-  static getApiKey(): string | null {
-    const apiKey = localStorage.getItem(this.API_KEY_STORAGE_KEY);
-    const expiry = localStorage.getItem(this.API_KEY_EXPIRY_KEY);
-
-    if (!apiKey || !expiry) {
-      return null;
-    }
-
-    // Check if the API key has expired
-    if (new Date(expiry) < new Date()) {
-      this.unlinkApiKey();
-      return null;
-    }
-
-    return apiKey;
-  }
-
-  static getPreviousKeys(): string[] {
-    const keys = localStorage.getItem(this.PREVIOUS_KEYS_STORAGE_KEY);
-    return keys ? JSON.parse(keys) : [];
-  }
-
-  static unlinkApiKey(): void {
-    localStorage.removeItem(this.API_KEY_STORAGE_KEY);
-    localStorage.removeItem(this.API_KEY_EXPIRY_KEY);
-    this.firecrawlApp = null;
-    console.log('API key unlinked successfully');
-  }
-
-  static async crawlPumpFun(): Promise<{ success: boolean; error?: string; data?: any }> {
-    const apiKey = this.getApiKey();
-    if (!apiKey) {
-      return { success: false, error: 'API key not found or expired' };
-    }
-
-    try {
-      console.log('Making crawl request to Firecrawl API');
-      if (!this.firecrawlApp) {
-        this.firecrawlApp = new MockFirecrawlApp({ apiKey });
-      }
-
-      const crawlResponse = await this.firecrawlApp.crawlUrl('https://pump.fun', {
-        limit: 100,
-        scrapeOptions: {
-          formats: ['markdown', 'html'],
-        }
-      });
-
-      if (!crawlResponse.success) {
-        console.error('Crawl failed:', (crawlResponse as ErrorResponse).error);
-        return { 
-          success: false, 
-          error: (crawlResponse as ErrorResponse).error || 'Failed to crawl website' 
-        };
-      }
-
-      console.log('Crawl successful:', crawlResponse);
-      return { 
-        success: true,
-        data: crawlResponse.data 
-      };
-    } catch (error) {
-      console.error('Error during crawl:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to connect to Firecrawl API' 
-      };
-    }
   }
 }
