@@ -8,13 +8,22 @@ import { FirecrawlService } from "@/services/FirecrawlService";
 import { Memecoin } from "@/types/memecoin";
 import { Navigation } from "@/components/Navigation";
 import { WalletButton } from "@/components/WalletButton";
-import { CrawlResponse } from "@/types/crawl";
+import { PaymentGate } from "@/components/PaymentGate";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 const Index = () => {
   const { toast } = useToast();
+  const { connected } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
   const [coins, setCoins] = useState<Memecoin[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [hasPaidAccess, setHasPaidAccess] = useState(() => {
+    return localStorage.getItem("botAccessPaid") === "true";
+  });
+
+  const handlePaymentSuccess = () => {
+    setHasPaidAccess(true);
+  };
 
   const handleScan = async () => {
     setIsLoading(true);
@@ -22,7 +31,6 @@ const Index = () => {
       const result = await FirecrawlService.crawlPumpFun();
       
       if (result.success) {
-        // Transform CrawlData to Memecoin type
         const processedCoins: Memecoin[] = result.data.map(coin => ({
           name: coin.name,
           symbol: coin.symbol,
@@ -81,7 +89,6 @@ const Index = () => {
       const result = await FirecrawlService.crawlPumpFun();
       
       if (result.success) {
-        // Transform CrawlData to Memecoin type
         const processedCoins: Memecoin[] = result.data.map(coin => ({
           name: coin.name,
           symbol: coin.symbol,
@@ -124,20 +131,21 @@ const Index = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-background/80">
-      <Navigation />
-      <WalletButton />
-      <div className="container py-8 space-y-8">
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent">
-            Memecoin Scanner
-          </h1>
-          <p className="text-muted-foreground">
-            Find promising memecoins with high social engagement and low market cap
-          </p>
+  const renderContent = () => {
+    if (!connected) {
+      return (
+        <div className="text-center p-6">
+          <p className="text-muted-foreground">Please connect your wallet to access the bot</p>
         </div>
+      );
+    }
 
+    if (!hasPaidAccess) {
+      return <PaymentGate onPaymentSuccess={handlePaymentSuccess} />;
+    }
+
+    return (
+      <>
         <div className="max-w-md mx-auto">
           <div className="gradient-border">
             <div className="p-6 space-y-6">
@@ -182,6 +190,25 @@ const Index = () => {
             <MemecoinsTable coins={coins} />
           </div>
         )}
+      </>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-background/80">
+      <Navigation />
+      <WalletButton />
+      <div className="container py-8 space-y-8">
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent">
+            Memecoin Scanner
+          </h1>
+          <p className="text-muted-foreground">
+            Find promising memecoins with high social engagement and low market cap
+          </p>
+        </div>
+
+        {renderContent()}
       </div>
     </div>
   );
