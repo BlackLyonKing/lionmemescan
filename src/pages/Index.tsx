@@ -7,6 +7,7 @@ import { MemecoinsTable } from "@/components/MemecoinsTable";
 import { FirecrawlService } from "@/services/FirecrawlService";
 import { Memecoin } from "@/types/memecoin";
 import { Navigation } from "@/components/Navigation";
+import { WalletButton } from "@/components/WalletButton";
 
 const Index = () => {
   const { toast } = useToast();
@@ -127,6 +128,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-background/80">
       <Navigation />
+      <WalletButton />
       <div className="container py-8 space-y-8">
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent">
