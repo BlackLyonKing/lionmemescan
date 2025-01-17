@@ -41,10 +41,14 @@ export const WalletButton = () => {
 
   const handleWalletSelect = async (walletName: string) => {
     try {
+      console.log("Selecting wallet:", walletName);
       const selectedWallet = wallets.find(w => w.adapter.name === walletName);
       if (selectedWallet) {
         select(selectedWallet.adapter.name);
-        await connect();
+        // Only call connect() for WalletConnect, Phantom handles connection automatically
+        if (walletName === "WalletConnect") {
+          await connect();
+        }
         setOpen(false);
         toast({
           title: "Wallet connected",
