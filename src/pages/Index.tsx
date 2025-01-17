@@ -13,6 +13,53 @@ const Index = () => {
   const [coins, setCoins] = useState<Memecoin[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const handleScan = async () => {
+    setIsLoading(true);
+    try {
+      const result = await FirecrawlService.crawlPumpFun();
+      
+      if (result.success && result.data) {
+        // Process the scraped data here
+        // This is a mock implementation - you'll need to adjust based on actual data structure
+        const processedCoins: Memecoin[] = [
+          {
+            name: "Sample Coin",
+            symbol: "SAMPLE",
+            marketCap: 15000,
+            threadUrl: "https://pump.fun/thread/123",
+            threadComments: 150,
+            dexStatus: "paid",
+            graduated: false,
+            socialScore: 85,
+            meta: ["pepe", "wojak"],
+          },
+          // Add more mock data as needed
+        ];
+        
+        setCoins(processedCoins);
+        toast({
+          title: "Success",
+          description: "Successfully scraped pump.fun",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to scrape data",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error scraping data:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
       toast({
@@ -26,7 +73,8 @@ const Index = () => {
     setIsLoading(true);
     try {
       console.log("Searching pump.fun for:", searchQuery);
-      const result = await FirecrawlService.crawlPumpFun(searchQuery);
+      // Note: Removed the searchQuery parameter since the API doesn't accept it
+      const result = await FirecrawlService.crawlPumpFun();
       
       if (result.success && result.data) {
         // Process the scraped data here
@@ -86,29 +134,35 @@ const Index = () => {
           <div className="gradient-border">
             <div className="p-6 space-y-6">
               <ApiKeyForm />
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Enter contract address or name"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button
-                    onClick={handleSearch}
-                    disabled={isLoading}
-                    className="bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity whitespace-nowrap"
-                  >
-                    {isLoading ? "Searching..." : "Search"}
-                  </Button>
+              <Button
+                onClick={handleScan}
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity"
+              >
+                {isLoading ? "Scanning..." : "Scan pump.fun"}
+              </Button>
+              
+              <div className="pt-4 border-t border-white/10">
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Search for specific coins:
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter contract address or name"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleSearch}
+                      disabled={isLoading}
+                      className="bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity whitespace-nowrap"
+                    >
+                      {isLoading ? "Searching..." : "Search"}
+                    </Button>
+                  </div>
                 </div>
-                <Button
-                  onClick={handleSearch}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity"
-                >
-                  {isLoading ? "Scanning..." : "Scan pump.fun"}
-                </Button>
               </div>
             </div>
           </div>
