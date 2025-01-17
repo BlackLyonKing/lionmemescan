@@ -90,7 +90,7 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
           {coin.bundledBuys > 0 && (
             <TriangleAlert 
               className="h-4 w-4 text-yellow-500" 
-              title="This token has bundled buys"
+              aria-label="This token has bundled buys"
             />
           )}
         </div>
