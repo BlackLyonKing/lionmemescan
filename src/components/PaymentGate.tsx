@@ -106,18 +106,50 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   }
 
   return (
-    <div className="flex flex-col items-center space-y-4 p-6 border rounded-lg bg-card">
-      <h2 className="text-2xl font-bold">Access Required</h2>
-      <p className="text-muted-foreground text-center">
-        Pay {PAYMENT_AMOUNT} SOL to access the bot features for 30 days
-      </p>
-      <Button
-        onClick={handlePayment}
-        disabled={isProcessing}
-        className="w-full bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity"
-      >
-        {isProcessing ? "Processing..." : `Pay ${PAYMENT_AMOUNT} SOL`}
-      </Button>
+    <div className="gradient-border max-w-md mx-auto">
+      <div className="glass-card p-8 space-y-6">
+        <div className="space-y-2 text-center">
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent">
+            Access Required
+          </h2>
+          <p className="text-lg text-white/80">
+            Get 30 Days Access to Premium Features
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="bg-black/20 p-4 rounded-lg space-y-2">
+            <h3 className="font-semibold text-white">What you'll get:</h3>
+            <ul className="list-disc list-inside space-y-1 text-white/80">
+              <li>Real-time memecoin scanning</li>
+              <li>Advanced social metrics analysis</li>
+              <li>Early detection of trending coins</li>
+              <li>Risk assessment tools</li>
+            </ul>
+          </div>
+
+          <div className="text-center space-y-2">
+            <p className="text-xl font-bold text-white">
+              One-time payment: {PAYMENT_AMOUNT} SOL
+            </p>
+            <p className="text-sm text-white/60">
+              (~${(PAYMENT_AMOUNT * 100).toFixed(2)} USD)
+            </p>
+          </div>
+        </div>
+
+        <Button
+          onClick={handlePayment}
+          disabled={isProcessing}
+          className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity"
+        >
+          {isProcessing ? "Processing..." : `Pay ${PAYMENT_AMOUNT} SOL`}
+        </Button>
+
+        <p className="text-sm text-center text-white/60">
+          Your access will be activated immediately after payment
+        </p>
+      </div>
     </div>
   );
 };
