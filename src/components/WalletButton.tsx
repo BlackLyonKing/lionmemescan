@@ -1,6 +1,6 @@
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Button } from "@/components/ui/button";
-import { Wallet } from "lucide-react";
+import { Wallet, ChevronDown } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -9,6 +9,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 
 export const WalletButton = () => {
@@ -57,14 +63,26 @@ export const WalletButton = () => {
 
   if (connected) {
     return (
-      <Button
-        onClick={handleDisconnect}
-        variant="outline"
-        className="fixed top-4 right-4 bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity"
-      >
-        <Wallet className="mr-2 h-4 w-4" />
-        {publicKey?.toString().slice(0, 4)}...{publicKey?.toString().slice(-4)}
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            className="fixed top-4 right-4 bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity"
+          >
+            <Wallet className="mr-2 h-4 w-4" />
+            {publicKey?.toString().slice(0, 4)}...{publicKey?.toString().slice(-4)}
+            <ChevronDown className="ml-2 h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-[200px]">
+          <DropdownMenuItem
+            onClick={handleDisconnect}
+            className="cursor-pointer text-red-500 focus:text-red-500"
+          >
+            Disconnect Wallet
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
