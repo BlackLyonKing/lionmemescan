@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Memecoin } from '@/types/memecoin';
-import { ExternalLink, ArrowUpDown, AlertTriangle } from 'lucide-react';
+import { ExternalLink, ArrowUpDown, AlertTriangle, Shield } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -38,6 +38,7 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
     maxMarketCap: '',
     minSocialScore: '',
     minBundledBuys: '',
+    creatorRisk: 'all',
   });
 
   const handleSort = (field: keyof Memecoin) => {
@@ -57,8 +58,11 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
                          (!filters.maxMarketCap || coin.marketCap <= Number(filters.maxMarketCap));
     const socialScoreMatch = !filters.minSocialScore || coin.socialScore >= Number(filters.minSocialScore);
     const bundledBuysMatch = !filters.minBundledBuys || (coin.bundledBuys || 0) >= Number(filters.minBundledBuys);
+    const creatorRiskMatch = filters.creatorRisk === 'all' || 
+                            (coin.creatorRisk?.riskLevel === filters.creatorRisk);
 
-    return nameMatch && dexStatusMatch && marketCapMatch && socialScoreMatch && bundledBuysMatch;
+    return nameMatch && dexStatusMatch && marketCapMatch && socialScoreMatch && 
+           bundledBuysMatch && creatorRiskMatch;
   });
 
   const sortedCoins = [...filteredCoins].sort((a, b) => {
@@ -80,7 +84,7 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="glass-card p-4 grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="glass-card p-4 grid grid-cols-1 md:grid-cols-6 gap-4">
         <div>
           <label className="text-sm font-medium mb-2 block">Search</label>
           <Input
@@ -150,6 +154,23 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
             onChange={(e) => setFilters({ ...filters, minBundledBuys: e.target.value })}
           />
         </div>
+        <div>
+          <label className="text-sm font-medium mb-2 block">Creator Risk Level</label>
+          <Select
+            value={filters.creatorRisk}
+            onValueChange={(value) => setFilters({ ...filters, creatorRisk: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select risk level" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="low">Low Risk</SelectItem>
+              <SelectItem value="medium">Medium Risk</SelectItem>
+              <SelectItem value="high">High Risk</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="glass-card p-4">
@@ -173,6 +194,7 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
               <TableHead onClick={() => handleSort('bundledBuys')} className="cursor-pointer hover:text-primary">
                 Bundled Buys <ArrowUpDown className="inline h-4 w-4 ml-1" />
               </TableHead>
+              <TableHead>Creator Risk</TableHead>
               <TableHead>Token Page</TableHead>
             </TableRow>
           </TableHeader>
@@ -210,20 +232,41 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  {coin.bundledBuys !== undefined && (
+                  {coin.creatorRisk ? (
                     <div className="flex items-center gap-2">
-                      {coin.bundledBuys}
-                      {coin.bundledBuys > 5 && (
+                      <Badge
+                        variant={
+                          coin.creatorRisk.riskLevel === 'high' ? 'destructive' :
+                          coin.creatorRisk.riskLevel === 'medium' ? 'warning' :
+                          'success'
+                        }
+                      >
+                        {coin.creatorRisk.riskLevel}
+                      </Badge>
+                      {coin.creatorRisk.previousScams > 0 && (
                         <Tooltip>
                           <TooltipTrigger>
                             <AlertTriangle className="h-4 w-4 text-yellow-500" />
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>High number of bundled buys detected</p>
+                            <p>Creator involved in {coin.creatorRisk.previousScams} previous scams
+                            {coin.creatorRisk.lastScamDate ? 
+                              `. Last incident: ${new Date(coin.creatorRisk.lastScamDate).toLocaleDateString()}` 
+                              : ''}
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       )}
                     </div>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Shield className="h-4 w-4 text-green-500" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>No known risk</p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
                 </TableCell>
                 <TableCell>

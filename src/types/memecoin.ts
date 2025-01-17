@@ -11,4 +11,9 @@ export interface Memecoin {
   contractAddress?: string;
   chainId?: number;
   bundledBuys?: number;
+  creatorRisk?: {
+    previousScams: number;
+    riskLevel: "low" | "medium" | "high";
+    lastScamDate?: string;
+  };
 }

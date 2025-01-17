@@ -31,6 +31,11 @@ const Index = () => {
             socialScore: 85,
             meta: ["pepe", "wojak", "fart"],
             bundledBuys: 3,
+            creatorRisk: {
+              previousScams: 2,
+              riskLevel: "high",
+              lastScamDate: "2024-01-15",
+            },
           },
         ];
         
@@ -86,6 +91,11 @@ const Index = () => {
             socialScore: 85,
             meta: ["pepe", "wojak", "fart"],
             bundledBuys: 3,
+            creatorRisk: {
+              previousScams: 2,
+              riskLevel: "high",
+              lastScamDate: "2024-01-15",
+            },
           },
         ];
         
