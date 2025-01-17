@@ -7,13 +7,15 @@ import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { WalletConnectWalletAdapter } from "@solana/wallet-adapter-walletconnect";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
+import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 // You can also provide a custom RPC endpoint
 const endpoint = clusterApiUrl("devnet");
+const network = WalletAdapterNetwork.Devnet;
 const wallets = [
   new PhantomWalletAdapter(),
-  new WalletConnectWalletAdapter({ network: "devnet" })  // Added required network parameter
+  new WalletConnectWalletAdapter({ network }) 
 ];
 
 const App = () => (
