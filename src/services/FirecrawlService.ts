@@ -47,6 +47,7 @@ class MockFirecrawlApp implements FirecrawlApp {
 export class FirecrawlService {
   private static API_KEY_STORAGE_KEY = 'firecrawl_api_key';
   private static API_KEY_EXPIRY_KEY = 'firecrawl_api_key_expiry';
+  private static PREVIOUS_KEYS_STORAGE_KEY = 'firecrawl_previous_keys';
   private static firecrawlApp: FirecrawlApp | null = null;
 
   static saveApiKey(apiKey: string): void {
@@ -56,6 +57,18 @@ export class FirecrawlService {
     
     localStorage.setItem(this.API_KEY_STORAGE_KEY, apiKey);
     localStorage.setItem(this.API_KEY_EXPIRY_KEY, expiryTime.toISOString());
+    
+    // Save to previous keys (masked)
+    const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
+    const previousKeys = this.getPreviousKeys();
+    if (!previousKeys.includes(maskedKey)) {
+      previousKeys.unshift(maskedKey); // Add to beginning of array
+      if (previousKeys.length > 5) { // Keep only last 5 keys
+        previousKeys.pop();
+      }
+      localStorage.setItem(this.PREVIOUS_KEYS_STORAGE_KEY, JSON.stringify(previousKeys));
+    }
+    
     this.firecrawlApp = new MockFirecrawlApp({ apiKey });
     console.log('API key saved successfully with expiry:', expiryTime);
   }
@@ -75,6 +88,11 @@ export class FirecrawlService {
     }
 
     return apiKey;
+  }
+
+  static getPreviousKeys(): string[] {
+    const keys = localStorage.getItem(this.PREVIOUS_KEYS_STORAGE_KEY);
+    return keys ? JSON.parse(keys) : [];
   }
 
   static unlinkApiKey(): void {
