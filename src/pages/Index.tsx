@@ -8,6 +8,7 @@ import { FirecrawlService } from "@/services/FirecrawlService";
 import { Memecoin } from "@/types/memecoin";
 import { Navigation } from "@/components/Navigation";
 import { WalletButton } from "@/components/WalletButton";
+import { CrawlResponse } from "@/types/crawl";
 
 const Index = () => {
   const { toast } = useToast();
@@ -20,26 +21,25 @@ const Index = () => {
     try {
       const result = await FirecrawlService.crawlPumpFun();
       
-      if (result.success && result.data) {
-        const processedCoins: Memecoin[] = [
-          {
-            name: "Sample Coin",
-            symbol: "SAMPLE",
-            marketCap: 15000,
-            threadUrl: "https://pump.fun/thread/123",
-            threadComments: 150,
-            dexStatus: "paid",
-            graduated: false,
-            socialScore: 85,
-            meta: ["pepe", "wojak", "fart"],
-            bundledBuys: 3,
-            creatorRisk: {
-              previousScams: 2,
-              riskLevel: "high",
-              lastScamDate: "2024-01-15",
-            },
-          },
-        ];
+      if (result.success) {
+        // Transform CrawlData to Memecoin type
+        const processedCoins: Memecoin[] = result.data.map(coin => ({
+          name: coin.name,
+          symbol: coin.symbol,
+          marketCap: coin.marketCap,
+          threadUrl: coin.threadUrl,
+          threadComments: coin.threadComments,
+          dexStatus: coin.dexStatus as "paid" | "unpaid",
+          graduated: coin.graduated,
+          socialScore: coin.socialScore,
+          meta: coin.meta,
+          bundledBuys: coin.bundledBuys,
+          creatorRisk: {
+            previousScams: coin.creatorRisk.previousScams,
+            riskLevel: coin.creatorRisk.riskLevel as "low" | "medium" | "high",
+            lastScamDate: coin.creatorRisk.lastScamDate
+          }
+        }));
         
         setCoins(processedCoins);
         toast({
@@ -49,7 +49,7 @@ const Index = () => {
       } else {
         toast({
           title: "Error",
-          description: result.error || "Failed to scrape data",
+          description: "Failed to scrape data",
           variant: "destructive",
         });
       }
@@ -80,26 +80,25 @@ const Index = () => {
       console.log("Searching pump.fun for:", searchQuery);
       const result = await FirecrawlService.crawlPumpFun();
       
-      if (result.success && result.data) {
-        const processedCoins: Memecoin[] = [
-          {
-            name: "Sample Coin",
-            symbol: "SAMPLE",
-            marketCap: 15000,
-            threadUrl: "https://pump.fun/thread/123",
-            threadComments: 150,
-            dexStatus: "paid",
-            graduated: false,
-            socialScore: 85,
-            meta: ["pepe", "wojak", "fart"],
-            bundledBuys: 3,
-            creatorRisk: {
-              previousScams: 2,
-              riskLevel: "high",
-              lastScamDate: "2024-01-15",
-            },
-          },
-        ];
+      if (result.success) {
+        // Transform CrawlData to Memecoin type
+        const processedCoins: Memecoin[] = result.data.map(coin => ({
+          name: coin.name,
+          symbol: coin.symbol,
+          marketCap: coin.marketCap,
+          threadUrl: coin.threadUrl,
+          threadComments: coin.threadComments,
+          dexStatus: coin.dexStatus as "paid" | "unpaid",
+          graduated: coin.graduated,
+          socialScore: coin.socialScore,
+          meta: coin.meta,
+          bundledBuys: coin.bundledBuys,
+          creatorRisk: {
+            previousScams: coin.creatorRisk.previousScams,
+            riskLevel: coin.creatorRisk.riskLevel as "low" | "medium" | "high",
+            lastScamDate: coin.creatorRisk.lastScamDate
+          }
+        }));
         
         setCoins(processedCoins);
         toast({
@@ -109,7 +108,7 @@ const Index = () => {
       } else {
         toast({
           title: "Error",
-          description: result.error || "Failed to search data",
+          description: "Failed to search data",
           variant: "destructive",
         });
       }
