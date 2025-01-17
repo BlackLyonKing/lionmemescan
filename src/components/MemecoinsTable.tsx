@@ -15,17 +15,6 @@ interface MemecoinsTableProps {
   coins: Memecoin[];
 }
 
-const getExplorerUrl = (chainId: number, contractAddress: string) => {
-  switch (chainId) {
-    case 1: // Ethereum
-      return `https://etherscan.io/token/${contractAddress}`;
-    case 56: // BSC
-      return `https://bscscan.com/token/${contractAddress}`;
-    default:
-      return `https://etherscan.io/token/${contractAddress}`;
-  }
-};
-
 export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
   const [sortField, setSortField] = useState<keyof Memecoin>('marketCap');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -61,7 +50,7 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
             <TableHead>DEX Status</TableHead>
             <TableHead>Meta Tags</TableHead>
             <TableHead onClick={() => handleSort('socialScore')} className="cursor-pointer">Social Score</TableHead>
-            <TableHead>Contract</TableHead>
+            <TableHead>Token Page</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -98,9 +87,9 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
                 </div>
               </TableCell>
               <TableCell>
-                {coin.contractAddress && coin.chainId && (
+                {coin.threadUrl && (
                   <a
-                    href={getExplorerUrl(coin.chainId, coin.contractAddress)}
+                    href={coin.threadUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-crypto-purple hover:text-crypto-cyan transition-colors"
