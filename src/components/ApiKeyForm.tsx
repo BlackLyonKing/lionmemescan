@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { FirecrawlService } from '@/services/FirecrawlService';
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export const ApiKeyForm = () => {
   const { toast } = useToast();
@@ -10,6 +12,7 @@ export const ApiKeyForm = () => {
   const [hasActiveKey, setHasActiveKey] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [previousKeys, setPreviousKeys] = useState<string[]>([]);
+  const [saveToList, setSaveToList] = useState(false);
 
   useEffect(() => {
     // Check if there's an active API key and load previous keys
@@ -64,12 +67,41 @@ export const ApiKeyForm = () => {
     setActiveKey(null);
   };
 
+  const handleToggleSave = (checked: boolean) => {
+    setSaveToList(checked);
+    const currentKey = FirecrawlService.getApiKey();
+    if (checked && currentKey) {
+      // Add to saved keys list
+      const maskedKey = `${currentKey.substring(0, 4)}...${currentKey.substring(currentKey.length - 4)}`;
+      if (!previousKeys.includes(maskedKey)) {
+        const newKeys = [maskedKey, ...previousKeys];
+        localStorage.setItem('firecrawl_previous_keys', JSON.stringify(newKeys));
+        setPreviousKeys(newKeys);
+        toast({
+          title: "Success",
+          description: "API key added to saved list",
+          duration: 3000,
+        });
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       {hasActiveKey ? (
         <div className="space-y-4">
           <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-            <p className="text-sm text-green-500">Active API Key: {activeKey}</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-green-500">Active API Key: {activeKey}</p>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="save-key"
+                  checked={saveToList}
+                  onCheckedChange={handleToggleSave}
+                />
+                <Label htmlFor="save-key" className="text-sm text-muted-foreground">Save to list</Label>
+              </div>
+            </div>
           </div>
           <Button 
             onClick={handleUnlink}
