@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, TriangleAlert } from 'lucide-react';
 import { Memecoin } from '@/types/memecoin';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,6 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
 
     try {
       console.log(`Attempting to buy ${coin.symbol} with ${amount} SOL`);
-      // Here you would implement the actual purchase logic using the Solana web3.js library
       toast({
         title: "Purchase initiated",
         description: `Attempting to buy ${coin.symbol} with ${amount} SOL`,
@@ -85,7 +84,17 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
           />
         </div>
       </TableCell>
-      <TableCell>{coin.bundledBuys || 0}</TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1">
+          {coin.bundledBuys || 0}
+          {coin.bundledBuys > 0 && (
+            <TriangleAlert 
+              className="h-4 w-4 text-yellow-500" 
+              title="This token has bundled buys"
+            />
+          )}
+        </div>
+      </TableCell>
       <TableCell>
         {coin.threadUrl && (
           <a
