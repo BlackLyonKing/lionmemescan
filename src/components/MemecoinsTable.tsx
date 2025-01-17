@@ -33,8 +33,11 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
     }
   };
 
-  // First filter out any tokens with scam history
-  const safeCoins = coins.filter(coin => !coin.creatorRisk?.previousScams);
+  // First filter out any tokens with scam history or too many bundled buys
+  const safeCoins = coins.filter(coin => 
+    !coin.creatorRisk?.previousScams && 
+    (!coin.bundledBuys || coin.bundledBuys <= 2)
+  );
 
   const filteredCoins = safeCoins.filter(coin => {
     const nameMatch = coin.name.toLowerCase().includes(filters.name.toLowerCase()) ||
