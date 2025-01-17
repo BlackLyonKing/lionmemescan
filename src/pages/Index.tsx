@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { ApiKeyForm } from "@/components/ApiKeyForm";
 import { MemecoinsTable } from "@/components/MemecoinsTable";
@@ -10,11 +11,22 @@ const Index = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [coins, setCoins] = useState<Memecoin[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const handleScrape = async () => {
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a contract address or name to search",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const result = await FirecrawlService.crawlPumpFun();
+      console.log("Searching pump.fun for:", searchQuery);
+      const result = await FirecrawlService.crawlPumpFun(searchQuery);
       
       if (result.success && result.data) {
         // Process the scraped data here
@@ -37,17 +49,17 @@ const Index = () => {
         setCoins(processedCoins);
         toast({
           title: "Success",
-          description: "Successfully scraped pump.fun",
+          description: "Successfully searched pump.fun",
         });
       } else {
         toast({
           title: "Error",
-          description: result.error || "Failed to scrape data",
+          description: result.error || "Failed to search data",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("Error scraping data:", error);
+      console.error("Error searching data:", error);
       toast({
         title: "Error",
         description: "An unexpected error occurred",
@@ -74,13 +86,30 @@ const Index = () => {
           <div className="gradient-border">
             <div className="p-6 space-y-6">
               <ApiKeyForm />
-              <Button
-                onClick={handleScrape}
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity"
-              >
-                {isLoading ? "Scanning..." : "Scan pump.fun"}
-              </Button>
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter contract address or name"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleSearch}
+                    disabled={isLoading}
+                    className="bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity whitespace-nowrap"
+                  >
+                    {isLoading ? "Searching..." : "Search"}
+                  </Button>
+                </div>
+                <Button
+                  onClick={handleSearch}
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity"
+                >
+                  {isLoading ? "Scanning..." : "Scan pump.fun"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
