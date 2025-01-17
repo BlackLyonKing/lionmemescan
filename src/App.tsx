@@ -9,25 +9,39 @@ import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { clusterApiUrl } from "@solana/web3.js";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import "@solana/wallet-adapter-react-ui/styles.css";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 // You can also provide a custom RPC endpoint
 const endpoint = clusterApiUrl("devnet");
 const network = WalletAdapterNetwork.Devnet;
 const wallets = [
   new PhantomWalletAdapter(),
-  new WalletConnectWalletAdapter({ network }) 
+  new WalletConnectWalletAdapter({ 
+    network,
+    options: {
+      projectId: "your-project-id", // Replace with your WalletConnect project ID
+      metadata: {
+        name: "Memecoin Scanner",
+        description: "Scan and analyze memecoins",
+        url: window.location.origin,
+        icons: ["https://your-app-icon.com"]
+      }
+    }
+  })
 ];
 
 const App = () => (
   <ConnectionProvider endpoint={endpoint}>
     <WalletProvider wallets={wallets} autoConnect>
       <WalletModalProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-          </Routes>
-          <Toaster />
-        </BrowserRouter>
+        <TooltipProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+            </Routes>
+            <Toaster />
+          </BrowserRouter>
+        </TooltipProvider>
       </WalletModalProvider>
     </WalletProvider>
   </ConnectionProvider>
