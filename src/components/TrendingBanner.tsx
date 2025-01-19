@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowTrendingUp, AlertTriangle } from "lucide-react";
+import { TrendingUp, AlertTriangle } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -69,7 +69,7 @@ const TrendingBanner = () => {
     <Card className="w-full p-4 bg-gradient-to-r from-crypto-purple/10 to-crypto-cyan/10 hover:from-crypto-purple/20 hover:to-crypto-cyan/20 transition-all duration-300">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ArrowTrendingUp className="h-5 w-5 text-crypto-purple" />
+          <TrendingUp className="h-5 w-5 text-crypto-purple" />
           <span className="font-semibold">{currentCoin.name}</span>
           <span className="text-sm text-muted-foreground">({currentCoin.symbol})</span>
         </div>
