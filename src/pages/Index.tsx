@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { ApiKeyForm } from "@/components/ApiKeyForm";
 import { MemecoinsTable } from "@/components/MemecoinsTable";
 import { FirecrawlService } from "@/services/FirecrawlService";
@@ -10,6 +10,7 @@ import { Navigation } from "@/components/Navigation";
 import { WalletButton } from "@/components/WalletButton";
 import { PaymentGate } from "@/components/PaymentGate";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { SolanaPrice } from "@/components/SolanaPrice";
 
 const Index = () => {
   const { toast } = useToast();
@@ -198,6 +199,9 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-background/80">
       <Navigation />
       <WalletButton />
+      <div className="fixed top-4 left-4 z-50">
+        <SolanaPrice />
+      </div>
       <div className="container py-8 space-y-8">
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent">
