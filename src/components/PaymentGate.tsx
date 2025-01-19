@@ -26,6 +26,9 @@ const PRICING_TIERS: PricingTier[] = [
       "Basic memecoin scanning",
       "Limited social metrics",
       "Basic trend detection",
+      "500 pages per scan limit",
+      "10 scrapes per minute",
+      "1 crawl per minute",
     ],
     duration: ACCESS_DURATION.TRIAL,
   },
@@ -37,6 +40,9 @@ const PRICING_TIERS: PricingTier[] = [
       "Full social metrics analysis",
       "Early trend detection",
       "Basic risk assessment",
+      "500 pages per scan limit",
+      "10 scrapes per minute",
+      "1 crawl per minute",
     ],
     duration: ACCESS_DURATION.PAID,
   },
@@ -49,6 +55,9 @@ const PRICING_TIERS: PricingTier[] = [
       "Instant trend alerts",
       "Advanced risk assessment",
       "Priority support",
+      "500 pages per scan limit",
+      "10 scrapes per minute",
+      "1 crawl per minute",
     ],
     duration: ACCESS_DURATION.PAID,
   },
@@ -60,9 +69,13 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasValidAccess, setHasValidAccess] = useState(false);
   const [selectedTier, setSelectedTier] = useState<PricingTier | null>(null);
+  const [solPrice, setSolPrice] = useState<number>(0);
 
   useEffect(() => {
     checkAccess();
+    // Fetch SOL price - this is a mock implementation
+    // In production, you should fetch the actual price from an API
+    setSolPrice(20); // Assuming 1 SOL = $20 USD
   }, [publicKey]);
 
   const checkAccess = () => {
@@ -184,7 +197,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
                 </span>
                 {tier.price > 0 && (
                   <p className="text-sm text-white/60">
-                    (~${(tier.price * 100).toFixed(2)} USD)
+                    (~${(tier.price * solPrice).toFixed(2)} USD)
                   </p>
                 )}
               </div>

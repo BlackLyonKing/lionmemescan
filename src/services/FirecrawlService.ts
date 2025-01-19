@@ -1,8 +1,10 @@
-import { CrawlResponse } from '@/types/crawl';
-
 export class FirecrawlService {
   private static readonly API_KEY_PREFIX = 'firecrawl_api_key';
   private static readonly PREVIOUS_KEYS_PREFIX = 'firecrawl_previous_keys';
+  private static readonly RATE_LIMIT_PREFIX = 'firecrawl_rate_limit';
+  private static readonly MAX_PAGES = 500;
+  private static readonly SCRAPES_PER_MINUTE = 10;
+  private static readonly CRAWLS_PER_MINUTE = 1;
 
   static getStorageKeyForWallet(prefix: string, walletAddress?: string): string {
     return walletAddress ? `${prefix}_${walletAddress}` : prefix;
@@ -19,7 +21,7 @@ export class FirecrawlService {
 
   static getApiKey(walletAddress?: string): string | null {
     const storageKey = this.getStorageKeyForWallet(this.API_KEY_PREFIX, walletAddress);
-    const apiKey = localStorage.getItem(storageKey);
+    const apiKey = localStorage.setItem(storageKey);
     const expirationTime = localStorage.getItem(`${storageKey}_expiration`);
 
     if (!apiKey || !expirationTime) {
@@ -45,6 +47,39 @@ export class FirecrawlService {
     const storageKey = this.getStorageKeyForWallet(this.PREVIOUS_KEYS_PREFIX, walletAddress);
     const previousKeys = localStorage.getItem(storageKey);
     return previousKeys ? JSON.parse(previousKeys) : [];
+  }
+
+  private static checkRateLimit(walletAddress?: string): boolean {
+    const now = Date.now();
+    const storageKey = this.getStorageKeyForWallet(this.RATE_LIMIT_PREFIX, walletAddress);
+    const rateLimit = localStorage.getItem(storageKey);
+    const rateLimitData = rateLimit ? JSON.parse(rateLimit) : { 
+      lastCrawl: 0,
+      crawlCount: 0,
+      lastScrape: 0,
+      scrapeCount: 0
+    };
+
+    // Reset counters if minute has passed
+    if (now - rateLimitData.lastCrawl >= 60000) {
+      rateLimitData.crawlCount = 0;
+    }
+    if (now - rateLimitData.lastScrape >= 60000) {
+      rateLimitData.scrapeCount = 0;
+    }
+
+    // Check limits
+    if (rateLimitData.crawlCount >= this.CRAWLS_PER_MINUTE || 
+        rateLimitData.scrapeCount >= this.SCRAPES_PER_MINUTE) {
+      return false;
+    }
+
+    // Update rate limit data
+    rateLimitData.lastCrawl = now;
+    rateLimitData.crawlCount++;
+    localStorage.setItem(storageKey, JSON.stringify(rateLimitData));
+    
+    return true;
   }
 
   static async crawlPumpFun(): Promise<CrawlResponse> {
