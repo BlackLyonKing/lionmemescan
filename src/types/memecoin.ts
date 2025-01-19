@@ -1,3 +1,14 @@
+export interface WhaleStats {
+  maxHolderPercentage: number;
+  developerHoldingPercentage: number;
+  topHoldersHistory?: string[];
+}
+
+export interface LiquidityStats {
+  percentageChange24h: number;
+  totalLiquidity: number;
+}
+
 export interface Memecoin {
   name: string;
   symbol: string;
@@ -16,4 +27,7 @@ export interface Memecoin {
     riskLevel: "low" | "medium" | "high";
     lastScamDate?: string;
   };
+  whaleStats?: WhaleStats;
+  liquidityStats?: LiquidityStats;
+  riskScore?: number;
 }

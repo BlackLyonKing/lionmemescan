@@ -1,12 +1,19 @@
 import { useState } from 'react';
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, TriangleAlert } from 'lucide-react';
+import { ExternalLink, TriangleAlert, AlertTriangle } from 'lucide-react';
 import { Memecoin } from '@/types/memecoin';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useToast } from "@/hooks/use-toast";
+import { getRiskColor, getRiskLabel } from '@/utils/riskCalculator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface MemecoinsTableRowProps {
   coin: Memecoin;
@@ -14,7 +21,7 @@ interface MemecoinsTableRowProps {
 
 export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
   const [amount, setAmount] = useState<string>('');
-  const { connected, publicKey } = useWallet();
+  const { connected } = useWallet();
   const { toast } = useToast();
 
   const handleBuy = async () => {
@@ -52,6 +59,9 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
     }
   };
 
+  const riskScoreColor = getRiskColor(coin.riskScore || 1);
+  const riskLabel = getRiskLabel(coin.riskScore || 1);
+
   return (
     <TableRow>
       <TableCell>
@@ -61,6 +71,34 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
         </div>
       </TableCell>
       <TableCell>${coin.marketCap.toLocaleString()}</TableCell>
+      <TableCell>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <div className={`flex items-center gap-2 font-bold ${riskScoreColor}`}>
+                {coin.riskScore || 1}
+                <AlertTriangle className="h-4 w-4" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="space-y-2">
+                <p className="font-semibold">{riskLabel}</p>
+                <ul className="text-sm list-disc list-inside">
+                  {coin.whaleStats?.maxHolderPercentage > 15 && (
+                    <li>High whale concentration</li>
+                  )}
+                  {coin.bundledBuys > 2 && (
+                    <li>Suspicious buying patterns</li>
+                  )}
+                  {coin.liquidityStats?.percentageChange24h < -20 && (
+                    <li>Significant liquidity decrease</li>
+                  )}
+                </ul>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </TableCell>
       <TableCell>{coin.threadComments}</TableCell>
       <TableCell>
         <Badge variant={coin.dexStatus === 'paid' ? 'default' : 'destructive'}>
