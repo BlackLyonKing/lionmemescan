@@ -1,3 +1,6 @@
+import { CrawlResponse } from '@/types/crawl';
+import FirecrawlApp from '@mendable/firecrawl-js';
+
 export class FirecrawlService {
   private static readonly API_KEY_PREFIX = 'firecrawl_api_key';
   private static readonly PREVIOUS_KEYS_PREFIX = 'firecrawl_previous_keys';
@@ -5,6 +8,7 @@ export class FirecrawlService {
   private static readonly MAX_PAGES = 500;
   private static readonly SCRAPES_PER_MINUTE = 10;
   private static readonly CRAWLS_PER_MINUTE = 1;
+  private static firecrawlApp: FirecrawlApp | null = null;
 
   static getStorageKeyForWallet(prefix: string, walletAddress?: string): string {
     return walletAddress ? `${prefix}_${walletAddress}` : prefix;
@@ -13,6 +17,7 @@ export class FirecrawlService {
   static saveApiKey(apiKey: string, walletAddress?: string): void {
     const storageKey = this.getStorageKeyForWallet(this.API_KEY_PREFIX, walletAddress);
     localStorage.setItem(storageKey, apiKey);
+    this.firecrawlApp = new FirecrawlApp({ apiKey });
     
     // Set expiration time (30 minutes from now)
     const expirationTime = new Date().getTime() + 30 * 60 * 1000;
@@ -21,7 +26,7 @@ export class FirecrawlService {
 
   static getApiKey(walletAddress?: string): string | null {
     const storageKey = this.getStorageKeyForWallet(this.API_KEY_PREFIX, walletAddress);
-    const apiKey = localStorage.setItem(storageKey);
+    const apiKey = localStorage.getItem(storageKey);
     const expirationTime = localStorage.getItem(`${storageKey}_expiration`);
 
     if (!apiKey || !expirationTime) {
@@ -83,31 +88,34 @@ export class FirecrawlService {
   }
 
   static async crawlPumpFun(): Promise<CrawlResponse> {
-    // Return sample data for demonstration
-    return {
-      success: true,
-      status: "completed",
-      completed: 1,
-      total: 1,
-      creditsUsed: 1,
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-      data: [{
-        name: "Sample Memecoin",
-        symbol: "SMPL",
-        marketCap: 150000,
-        threadUrl: "https://pump.fun/thread/123",
-        threadComments: 150,
-        dexStatus: "paid",
-        graduated: false,
-        socialScore: 85,
-        meta: ["pepe", "wojak", "trending"],
-        bundledBuys: 3,
-        creatorRisk: {
-          previousScams: 0,
-          riskLevel: "low",
-          lastScamDate: null
+    const apiKey = this.getApiKey();
+    if (!apiKey) {
+      return { success: false, error: 'API key not found' };
+    }
+
+    if (!this.checkRateLimit()) {
+      return { success: false, error: 'Rate limit exceeded. Please try again later.' };
+    }
+
+    try {
+      if (!this.firecrawlApp) {
+        this.firecrawlApp = new FirecrawlApp({ apiKey });
+      }
+
+      const response = await this.firecrawlApp.crawlUrl('https://pump.fun', {
+        limit: this.MAX_PAGES,
+        scrapeOptions: {
+          formats: ['markdown', 'html'],
         }
-      }]
-    };
+      });
+
+      return response as CrawlResponse;
+    } catch (error) {
+      console.error('Error during crawl:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to connect to Firecrawl API' 
+      };
+    }
   }
 }

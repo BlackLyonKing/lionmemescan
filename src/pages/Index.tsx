@@ -3,6 +3,7 @@ import { PaymentGate } from "@/components/PaymentGate";
 import { useState } from "react";
 import TrendingBanner from "@/components/TrendingBanner";
 import { UserProfile } from "@/components/UserProfile";
+import { CrawlForm } from "@/components/CrawlForm";
 
 const Index = () => {
   const [hasAccess, setHasAccess] = useState(false);
@@ -19,6 +20,7 @@ const Index = () => {
         ) : (
           <div className="space-y-8">
             <TrendingBanner />
+            <CrawlForm />
             <UserProfile />
           </div>
         )}

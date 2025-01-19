@@ -1,21 +1,6 @@
-export interface CreatorRisk {
-  previousScams: number;
-  riskLevel: string;
-  lastScamDate: string;
-}
-
-export interface CrawlData {
-  name: string;
-  symbol: string;
-  marketCap: number;
-  threadUrl: string;
-  threadComments: number;
-  dexStatus: string;
-  graduated: boolean;
-  socialScore: number;
-  meta: string[];
-  bundledBuys: number;
-  creatorRisk: CreatorRisk;
+export interface ErrorResponse {
+  success: false;
+  error: string;
 }
 
 export interface CrawlStatusResponse {
@@ -25,12 +10,7 @@ export interface CrawlStatusResponse {
   total: number;
   creditsUsed: number;
   expiresAt: string;
-  data: CrawlData[];
-}
-
-export interface ErrorResponse {
-  success: false;
-  error: string;
+  data: any[];
 }
 
 export type CrawlResponse = CrawlStatusResponse | ErrorResponse;
