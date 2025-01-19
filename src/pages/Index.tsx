@@ -11,6 +11,7 @@ import { WalletButton } from "@/components/WalletButton";
 import { PaymentGate } from "@/components/PaymentGate";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { SolanaPrice } from "@/components/SolanaPrice";
+import TrendingBanner from "@/components/TrendingBanner";
 
 const Index = () => {
   const { toast } = useToast();
@@ -147,37 +148,40 @@ const Index = () => {
 
     return (
       <>
-        <div className="max-w-md mx-auto">
-          <div className="gradient-border">
-            <div className="p-6 space-y-6">
-              <ApiKeyForm />
-              <Button
-                onClick={handleScan}
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity"
-              >
-                {isLoading ? "Scanning..." : "Scan pump.fun"}
-              </Button>
-              
-              <div className="pt-4 border-t border-white/10">
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Search for specific coins:
-                  </p>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter contract address or name"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={handleSearch}
-                      disabled={isLoading}
-                      className="bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity whitespace-nowrap"
-                    >
-                      {isLoading ? "Searching..." : "Search"}
-                    </Button>
+        <div className="space-y-6">
+          <TrendingBanner />
+          <div className="max-w-md mx-auto">
+            <div className="gradient-border">
+              <div className="p-6 space-y-6">
+                <ApiKeyForm />
+                <Button
+                  onClick={handleScan}
+                  disabled={isLoading}
+                  className="w-full bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity"
+                >
+                  {isLoading ? "Scanning..." : "Scan pump.fun"}
+                </Button>
+                
+                <div className="pt-4 border-t border-white/10">
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Search for specific coins:
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter contract address or name"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={handleSearch}
+                        disabled={isLoading}
+                        className="bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90 transition-opacity whitespace-nowrap"
+                      >
+                        {isLoading ? "Searching..." : "Search"}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
