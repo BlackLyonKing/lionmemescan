@@ -7,14 +7,21 @@ import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Bell, History } from "lucide-react";
 
+interface Transaction {
+  date: string;
+  type: string;
+  amount: string;
+  symbol: string; // Changed from token to symbol to match the usage
+}
+
 export const UserProfile = () => {
   const { publicKey } = useWallet();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [alertsEnabled, setAlertsEnabled] = useState(false);
-  const [transactions] = useState([
-    { date: "2024-02-20", type: "Purchase", amount: "0.5 SOL", token: "MEME1" },
-    { date: "2024-02-19", type: "Sale", amount: "0.3 SOL", token: "MEME2" },
+  const [transactions] = useState<Transaction[]>([
+    { date: "2024-02-20", type: "Purchase", amount: "0.5 SOL", symbol: "MEME1" },
+    { date: "2024-02-19", type: "Sale", amount: "0.3 SOL", symbol: "MEME2" },
   ]);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {

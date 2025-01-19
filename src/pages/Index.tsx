@@ -1,7 +1,7 @@
 import { WalletButton } from "@/components/WalletButton";
 import { PaymentGate } from "@/components/PaymentGate";
 import { useState } from "react";
-import { TrendingBanner } from "@/components/TrendingBanner";
+import TrendingBanner from "@/components/TrendingBanner";
 import { UserProfile } from "@/components/UserProfile";
 
 const Index = () => {
