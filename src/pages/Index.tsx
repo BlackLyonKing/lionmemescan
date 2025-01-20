@@ -5,9 +5,49 @@ import TrendingBanner from "@/components/TrendingBanner";
 import { UserProfile } from "@/components/UserProfile";
 import { CrawlForm } from "@/components/CrawlForm";
 import { TokenBanner } from "@/components/TokenBanner";
+import { BacktestingDashboard } from "@/components/BacktestingDashboard";
+import { Memecoin } from '@/types/memecoin';
 
 const Index = () => {
   const [hasAccess, setHasAccess] = useState(false);
+
+  // Mock historical data for backtesting
+  const mockHistoricalData: Memecoin[] = [
+    {
+      name: "Sample Coin 1",
+      symbol: "SC1",
+      marketCap: 1000000,
+      threadUrl: "https://example.com/sc1",
+      threadComments: 10,
+      dexStatus: "paid",
+      graduated: false,
+      socialScore: 80,
+      meta: ["sample", "coin"],
+      bundledBuys: 1,
+      creatorRisk: { previousScams: 0, riskLevel: "low" },
+      whaleStats: { maxHolderPercentage: 10, developerHoldingPercentage: 2 },
+      liquidityStats: { percentageChange24h: 5, totalLiquidity: 50000 },
+      riskScore: 3,
+      logoUrl: "https://example.com/logo1.png",
+    },
+    {
+      name: "Sample Coin 2",
+      symbol: "SC2",
+      marketCap: 2000000,
+      threadUrl: "https://example.com/sc2",
+      threadComments: 5,
+      dexStatus: "unpaid",
+      graduated: false,
+      socialScore: 60,
+      meta: ["sample", "coin"],
+      bundledBuys: 3,
+      creatorRisk: { previousScams: 1, riskLevel: "medium" },
+      whaleStats: { maxHolderPercentage: 20, developerHoldingPercentage: 5 },
+      liquidityStats: { percentageChange24h: -10, totalLiquidity: 30000 },
+      riskScore: 7,
+      logoUrl: "https://example.com/logo2.png",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -24,6 +64,7 @@ const Index = () => {
           <div className="space-y-8">
             <TrendingBanner />
             <CrawlForm />
+            <BacktestingDashboard historicalData={mockHistoricalData} />
             <UserProfile />
           </div>
         )}
