@@ -2,7 +2,6 @@ import { BrowserRouter } from "react-router-dom";
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import Index from "./pages/Index";
-import Pricing from "./pages/Pricing";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { WalletConnectWalletAdapter } from "@solana/wallet-adapter-walletconnect";
@@ -44,7 +43,6 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
-                <Route path="/pricing" element={<Pricing />} />
               </Routes>
               <Toaster />
             </BrowserRouter>
