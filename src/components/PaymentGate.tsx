@@ -70,12 +70,11 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   const [hasValidAccess, setHasValidAccess] = useState(false);
   const [selectedTier, setSelectedTier] = useState<PricingTier | null>(null);
   const [solPrice, setSolPrice] = useState<number>(0);
+  const { isTrialActive } = useTrialCountdown();
 
   useEffect(() => {
     checkAccess();
-    // Fetch SOL price - this is a mock implementation
-    // In production, you should fetch the actual price from an API
-    setSolPrice(20); // Assuming 1 SOL = $20 USD
+    setSolPrice(20);
   }, [publicKey]);
 
   const checkAccess = () => {
@@ -177,42 +176,13 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
 
   return (
     <div className="max-w-6xl mx-auto px-4">
-      <div className="text-center mb-16 space-y-8">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent">
-            Unleash the Power of Memecoin Hunting
-          </h1>
-          <p className="text-xl mb-8">
-            Stop getting REKT. Start making BANK.
-          </p>
-          <p className="text-lg mb-8 text-white/80">
-            Our AI-powered scanner digs deep into the memecoin jungle, analyzes the data, and alerts you to the hottest opportunities before they even hit the charts.
-          </p>
-          <ul className="space-y-4 text-left max-w-xl mx-auto mb-12">
-            <li className="flex items-start gap-3">
-              <svg className="w-6 h-6 text-green-500 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span><strong>Rug pull risk assessment:</strong> We'll warn you about potential scams so you can stay safe.</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <svg className="w-6 h-6 text-green-500 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span><strong>Real-time price alerts:</strong> Never miss a moonshot.</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <svg className="w-6 h-6 text-green-500 mt-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span><strong>Trending tokens:</strong> Discover the next big thing before everyone else.</span>
-            </li>
-          </ul>
-          <p className="text-xl font-semibold text-white/90">
-            Upgrade your memecoin game today. Choose your plan and start winning!
+      {isTrialActive ? (
+        <div className="text-center mb-8">
+          <p className="text-xl text-yellow-400">
+            You are currently on a free trial. Upgrade to continue accessing all features after your trial expires.
           </p>
         </div>
-      </div>
+      ) : null}
 
       <div className="text-center mb-12">
         <h2 className="text-4xl font-bold bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent mb-4">
