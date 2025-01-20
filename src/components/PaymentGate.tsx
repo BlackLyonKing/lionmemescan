@@ -62,7 +62,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   const [hasValidAccess, setHasValidAccess] = useState(false);
   const [selectedTier, setSelectedTier] = useState<PricingTier | null>(null);
   const [solPrice, setSolPrice] = useState<number>(0);
-  const { isTrialActive } = useTrialCountdown();
+  const { isTrialActive, startTrial } = useTrialCountdown();
 
   useEffect(() => {
     checkAccess();
@@ -96,7 +96,8 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
     }
 
     if (tier.price === 0) {
-      // Handle free trial
+      // Start trial only when user explicitly chooses free tier
+      startTrial();
       const paymentTime = Date.now();
       localStorage.setItem(
         `lastPayment_${publicKey.toString()}`,
@@ -104,7 +105,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       );
       toast({
         title: "Trial Activated",
-        description: "Your 7-day trial has been activated!",
+        description: "Your 40-hour trial has been activated!",
       });
       setHasValidAccess(true);
       onPaymentSuccess();

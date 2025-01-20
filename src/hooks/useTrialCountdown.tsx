@@ -6,28 +6,29 @@ import { useToast } from "@/hooks/use-toast";
 const TRIAL_DURATION = 40 * 60 * 60 * 1000; // 40 hours in milliseconds
 
 export const useTrialCountdown = () => {
-  const { disconnect } = useWallet();
+  const { disconnect, publicKey } = useWallet();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
 
   useEffect(() => {
-    const trialStart = localStorage.getItem('trialStartTime');
+    if (!publicKey) return;
+
+    const trialStart = localStorage.getItem(`trialStartTime_${publicKey.toString()}`);
     
     if (!trialStart) {
-      // Start new trial
-      const startTime = Date.now();
-      localStorage.setItem('trialStartTime', startTime.toString());
-      setTimeRemaining(TRIAL_DURATION);
-    } else {
-      // Calculate remaining time
-      const elapsed = Date.now() - parseInt(trialStart);
-      const remaining = Math.max(0, TRIAL_DURATION - elapsed);
-      setTimeRemaining(remaining);
+      // Don't start trial automatically - wait for explicit activation
+      setTimeRemaining(null);
+      return;
     }
 
+    // Calculate remaining time
+    const elapsed = Date.now() - parseInt(trialStart);
+    const remaining = Math.max(0, TRIAL_DURATION - elapsed);
+    setTimeRemaining(remaining);
+
     const interval = setInterval(() => {
-      const trialStartTime = localStorage.getItem('trialStartTime');
+      const trialStartTime = localStorage.getItem(`trialStartTime_${publicKey.toString()}`);
       if (trialStartTime) {
         const elapsed = Date.now() - parseInt(trialStartTime);
         const remaining = Math.max(0, TRIAL_DURATION - elapsed);
@@ -35,7 +36,7 @@ export const useTrialCountdown = () => {
 
         if (remaining <= 0) {
           // Trial expired
-          localStorage.removeItem('trialStartTime');
+          localStorage.removeItem(`trialStartTime_${publicKey.toString()}`);
           disconnect();
           toast({
             title: "Trial Expired",
@@ -48,7 +49,7 @@ export const useTrialCountdown = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [disconnect, navigate, toast]);
+  }, [disconnect, navigate, toast, publicKey]);
 
   const formatTimeRemaining = () => {
     if (timeRemaining === null) return '';
@@ -60,9 +61,17 @@ export const useTrialCountdown = () => {
     return `${hours}h ${minutes}m ${seconds}s`;
   };
 
+  const startTrial = () => {
+    if (!publicKey) return;
+    const startTime = Date.now();
+    localStorage.setItem(`trialStartTime_${publicKey.toString()}`, startTime.toString());
+    setTimeRemaining(TRIAL_DURATION);
+  };
+
   return {
     timeRemaining,
     formattedTime: formatTimeRemaining(),
     isTrialActive: timeRemaining !== null && timeRemaining > 0,
+    startTrial,
   };
 };
