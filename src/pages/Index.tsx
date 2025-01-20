@@ -3,13 +3,16 @@ import { PaymentGate } from "@/components/PaymentGate";
 import { useState } from "react";
 import TrendingBanner from "@/components/TrendingBanner";
 import { UserProfile } from "@/components/UserProfile";
-import { CrawlForm } from "@/components/CrawlForm";
 import { TokenBanner } from "@/components/TokenBanner";
 import { BacktestingDashboard } from "@/components/BacktestingDashboard";
+import { Navigation } from "@/components/Navigation";
 import { Memecoin } from '@/types/memecoin';
+import { useWallet } from "@solana/wallet-adapter-react";
 
 const Index = () => {
   const [hasAccess, setHasAccess] = useState(false);
+  const { publicKey } = useWallet();
+  const isAdmin = publicKey?.toBase58() === "4UGRoYBFRufAm7HVSSiQbwp9ETa9gFWzyQ4czwaeVAv3";
 
   // Mock historical data for backtesting
   const mockHistoricalData: Memecoin[] = [
@@ -51,19 +54,20 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Navigation />
+      
       <div className="container py-8 space-y-8">
         <div className="flex justify-end">
           <WalletButton />
         </div>
 
-        <TokenBanner hasAccess={hasAccess} />
+        <TokenBanner hasAccess={hasAccess || isAdmin} />
 
-        {!hasAccess ? (
+        {!hasAccess && !isAdmin ? (
           <PaymentGate onPaymentSuccess={() => setHasAccess(true)} />
         ) : (
           <div className="space-y-8">
             <TrendingBanner />
-            <CrawlForm />
             <BacktestingDashboard historicalData={mockHistoricalData} />
             <UserProfile />
           </div>

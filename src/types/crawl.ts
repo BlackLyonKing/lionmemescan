@@ -11,6 +11,7 @@ export interface CrawlStatusResponse {
   creditsUsed: number;
   expiresAt: string;
   data: any[];
+  error?: string;
 }
 
 export type CrawlResponse = CrawlStatusResponse | ErrorResponse;
