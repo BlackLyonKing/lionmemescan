@@ -4,11 +4,14 @@ import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { SolanaPrice } from "./SolanaPrice";
 import { WalletButton } from "./WalletButton";
+import { useTrialCountdown } from "@/hooks/useTrialCountdown";
 
 export const Navigation = () => {
+  const { formattedTime, isTrialActive } = useTrialCountdown();
+
   return (
     <div className="fixed top-0 left-0 right-0 z-50 border-b bg-background/80 backdrop-blur-xl">
-      <div className="flex items-center justify-between px-4 h-14">
+      <div className="flex items-center justify-between px-4 h-20">
         <div className="flex items-center gap-4">
           <Sheet>
             <SheetTrigger asChild>
@@ -40,7 +43,14 @@ export const Navigation = () => {
           </Sheet>
           <SolanaPrice />
         </div>
-        <WalletButton />
+        <div className="flex flex-col items-end gap-1">
+          <WalletButton />
+          {isTrialActive && (
+            <div className="text-sm text-muted-foreground">
+              Trial remaining: {formattedTime}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

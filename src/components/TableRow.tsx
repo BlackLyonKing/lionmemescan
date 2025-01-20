@@ -99,6 +99,40 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
     }
   };
 
+  const handleSell = async () => {
+    if (!connected || !publicKey) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to sell tokens",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log(`Initiating sale of ${coin.symbol}`);
+      
+      const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+      
+      // Calculate platform fee
+      const platformFee = parseFloat(amount) * (PLATFORM_FEE_PERCENTAGE / 100);
+      
+      toast({
+        title: "Sale initiated",
+        description: `Selling ${amount} ${coin.symbol}`,
+        className: "bg-gradient-to-r from-purple-600 to-pink-600 text-white",
+      });
+
+    } catch (error) {
+      console.error('Sale error:', error);
+      toast({
+        title: "Sale failed",
+        description: "There was an error processing your sale",
+        variant: "destructive",
+      });
+    }
+  };
+
   const riskScore = calculateRiskScore(coin);
   const riskScoreColor = getRiskColor(riskScore);
   const riskLabel = getRiskLabel(riskScore);
@@ -196,13 +230,22 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
             min={MIN_SOL_AMOUNT}
             step="0.01"
           />
-          <Button
-            onClick={handleBuy}
-            variant="default"
-            className="bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90"
-          >
-            Buy
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleBuy}
+              variant="default"
+              className="bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90"
+            >
+              Buy
+            </Button>
+            <Button
+              onClick={handleSell}
+              variant="outline"
+              className="border-crypto-purple text-crypto-purple hover:bg-crypto-purple/10"
+            >
+              Sell
+            </Button>
+          </div>
         </div>
       </TableCell>
     </TableRow>

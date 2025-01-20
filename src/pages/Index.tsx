@@ -11,6 +11,23 @@ import { MemecoinsTable } from "@/components/MemecoinsTable";
 import { TrialStatus } from "@/components/TrialStatus";
 import { useWallet } from "@solana/wallet-adapter-react";
 
+// Mock data for development
+const mockMemecoins = [
+  {
+    name: "Sample Coin 1",
+    symbol: "SAMP1",
+    marketCap: 1000000,
+    socialScore: 85,
+    dexStatus: "listed",
+    meta: ["trending", "new"],
+    threadUrl: "https://example.com",
+    threadComments: 150,
+    bundledBuys: 25,
+    riskScore: 3,
+  },
+  // Add more mock data as needed
+];
+
 const Index = () => {
   const [hasAccess, setHasAccess] = useState(false);
   const { publicKey } = useWallet();
@@ -21,7 +38,7 @@ const Index = () => {
       <Navigation />
       <TrialStatus />
       
-      <div className="container mx-auto py-8 space-y-8 px-4">
+      <div className="container mx-auto pt-24 space-y-8 px-4">
         <TokenBanner hasAccess={hasAccess || isAdmin} />
 
         {!hasAccess && !isAdmin ? (
