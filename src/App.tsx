@@ -11,8 +11,12 @@ import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import About from "./pages/About";
+import Alerts from "./pages/Alerts";
+import Portfolio from "./pages/Portfolio";
+import Profile from "./pages/Profile";
+import Scan from "./pages/Scan";
 
-// You can also provide a custom RPC endpoint
 const endpoint = clusterApiUrl("devnet");
 const network = WalletAdapterNetwork.Devnet;
 const wallets = [
@@ -43,6 +47,11 @@ const App = () => (
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/alerts" element={<Alerts />} />
+                <Route path="/portfolio" element={<Portfolio />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/scan" element={<Scan />} />
               </Routes>
               <Toaster />
             </BrowserRouter>
