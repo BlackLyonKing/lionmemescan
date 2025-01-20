@@ -6,12 +6,9 @@ import { UserProfile } from "@/components/UserProfile";
 import { TokenBanner } from "@/components/TokenBanner";
 import { BacktestingDashboard } from "@/components/BacktestingDashboard";
 import { Navigation } from "@/components/Navigation";
-import { SolanaPrice } from "@/components/SolanaPrice";
 import { MemecoinsTable } from "@/components/MemecoinsTable";
-import { TrialStatus } from "@/components/TrialStatus";
 import { useWallet } from "@solana/wallet-adapter-react";
 
-// Mock data for development
 const mockMemecoins = [
   {
     name: "Sample Coin 1",
@@ -36,7 +33,6 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navigation />
-      <TrialStatus />
       
       <div className="container mx-auto pt-24 space-y-8 px-4">
         <TokenBanner hasAccess={hasAccess || isAdmin} />

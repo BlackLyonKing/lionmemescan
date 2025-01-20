@@ -26,10 +26,7 @@ const PRICING_TIERS: PricingTier[] = [
     features: [
       "Basic memecoin scanning",
       "Limited social metrics",
-      "Basic trend detection",
-      "500 pages per scan limit",
-      "10 scrapes per minute",
-      "1 crawl per minute",
+      "Basic trend detection"
     ],
     duration: ACCESS_DURATION.TRIAL,
   },
@@ -40,25 +37,19 @@ const PRICING_TIERS: PricingTier[] = [
       "Advanced memecoin scanning",
       "Full social metrics analysis",
       "Early trend detection",
-      "Basic risk assessment",
-      "500 pages per scan limit",
-      "10 scrapes per minute",
-      "1 crawl per minute",
+      "Basic risk assessment"
     ],
     duration: ACCESS_DURATION.PAID,
   },
   {
-    name: "King",
+    name: "Kings",
     price: 0.5,
     features: [
       "Premium memecoin scanning",
       "Real-time social metrics",
       "Instant trend alerts",
       "Advanced risk assessment",
-      "Priority support",
-      "500 pages per scan limit",
-      "10 scrapes per minute",
-      "1 crawl per minute",
+      "Priority support"
     ],
     duration: ACCESS_DURATION.PAID,
   },
