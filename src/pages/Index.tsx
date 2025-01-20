@@ -59,8 +59,7 @@ const Index = () => {
       <Navigation />
       
       <div className="container mx-auto py-8 space-y-8 px-4">
-        <div className="fixed top-4 right-4 flex items-center gap-4">
-          <SolanaPrice />
+        <div className="fixed top-4 right-4">
           <WalletButton />
         </div>
 
