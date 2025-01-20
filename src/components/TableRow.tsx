@@ -26,6 +26,7 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
   const { toast } = useToast();
   const MIN_SOL_AMOUNT = 0.02;
   const PLATFORM_FEE_PERCENTAGE = 0.5; // 0.5%
+  const PLATFORM_WALLET_ADDRESS = "3EoyjLFyrMNfuf1FxvQ1Qvxmes7JmopWF4ehu3xp6hnG";
 
   const handleBuy = async () => {
     if (!connected || !publicKey) {
@@ -62,7 +63,7 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
       const transaction = new Transaction();
       
       // Add platform fee transfer instruction
-      const platformWallet = new PublicKey("YOUR_PLATFORM_WALLET_ADDRESS"); // Replace with your platform's wallet
+      const platformWallet = new PublicKey(PLATFORM_WALLET_ADDRESS);
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
