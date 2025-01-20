@@ -18,12 +18,13 @@ const mockMemecoins = [
     symbol: "SAMP1",
     marketCap: 1000000,
     socialScore: 85,
-    dexStatus: "listed",
+    dexStatus: "listed" as const,
     meta: ["trending", "new"],
     threadUrl: "https://example.com",
     threadComments: 150,
     bundledBuys: 25,
     riskScore: 3,
+    graduated: false
   },
   // Add more mock data as needed
 ];

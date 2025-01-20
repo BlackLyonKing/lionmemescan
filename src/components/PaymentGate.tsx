@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
+import { useTrialCountdown } from "@/hooks/useTrialCountdown";
 
 const RECIPIENT_ADDRESS = "YOUR_WALLET_ADDRESS"; // Replace with your wallet address
 const ACCESS_DURATION = {
