@@ -6,6 +6,8 @@ import { UserProfile } from "@/components/UserProfile";
 import { TokenBanner } from "@/components/TokenBanner";
 import { BacktestingDashboard } from "@/components/BacktestingDashboard";
 import { Navigation } from "@/components/Navigation";
+import { SolanaPrice } from "@/components/SolanaPrice";
+import { MemecoinsTable } from "@/components/MemecoinsTable";
 import { Memecoin } from '@/types/memecoin';
 import { useWallet } from "@solana/wallet-adapter-react";
 
@@ -14,8 +16,8 @@ const Index = () => {
   const { publicKey } = useWallet();
   const isAdmin = publicKey?.toBase58() === "4UGRoYBFRufAm7HVSSiQbwp9ETa9gFWzyQ4czwaeVAv3";
 
-  // Mock historical data for backtesting
-  const mockHistoricalData: Memecoin[] = [
+  // Mock data for development
+  const mockMemecoins: Memecoin[] = [
     {
       name: "Sample Coin 1",
       symbol: "SC1",
@@ -56,8 +58,9 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground">
       <Navigation />
       
-      <div className="container py-8 space-y-8">
-        <div className="flex justify-end">
+      <div className="container mx-auto py-8 space-y-8 px-4">
+        <div className="flex justify-between items-center">
+          <SolanaPrice />
           <WalletButton />
         </div>
 
@@ -68,7 +71,8 @@ const Index = () => {
         ) : (
           <div className="space-y-8">
             <TrendingBanner />
-            <BacktestingDashboard historicalData={mockHistoricalData} />
+            <BacktestingDashboard historicalData={mockMemecoins} />
+            <MemecoinsTable coins={mockMemecoins} />
             <UserProfile />
           </div>
         )}
