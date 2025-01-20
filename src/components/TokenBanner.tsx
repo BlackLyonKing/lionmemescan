@@ -59,7 +59,7 @@ export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
               )}>
                 {token.name}
               </span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm font-semibold bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent">
                 ${(token.marketCap / 1000000).toFixed(2)}M
               </span>
               <div className="flex items-center gap-2">
@@ -82,7 +82,7 @@ export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm font-semibold text-green-400">
                   {token.bundledBuys} buys
                 </span>
               </div>
