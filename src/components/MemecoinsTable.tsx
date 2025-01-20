@@ -8,6 +8,7 @@ import { TableFilters } from './TableFilters';
 import { MemecoinsTableHeader } from './TableHeader';
 import { MemecoinsTableRow } from './TableRow';
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface MemecoinsTableProps {
   coins: Memecoin[];
@@ -25,13 +26,18 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
     minBundledBuys: '',
   });
   const { publicKey } = useWallet();
+  const { toast } = useToast();
 
-  // Check if user has Basic tier (this should be replaced with actual tier check)
+  // Check if user has Basic tier
   const isBasicTier = localStorage.getItem(`lastPayment_${publicKey?.toString()}`)?.includes('"price":0.1');
 
   const handleSort = (field: keyof Memecoin) => {
     if (isBasicTier) {
-      console.log("Sorting is not available in Basic tier");
+      toast({
+        title: "Feature not available",
+        description: "Sorting is only available in Free and King tiers",
+        className: "bg-gradient-to-r from-purple-600 to-pink-600 text-white",
+      });
       return;
     }
     

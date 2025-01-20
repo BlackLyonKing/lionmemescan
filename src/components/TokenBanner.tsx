@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Bitcoin } from "lucide-react";
+import { Bitcoin, AlertTriangle } from "lucide-react";
 import TrendingTokensService from '@/services/TrendingTokensService';
 import { Memecoin } from '@/types/memecoin';
-import { getRiskColor } from '@/utils/riskCalculator';
+import { getRiskColor, getRiskLabel } from '@/utils/riskCalculator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface TokenBannerProps {
   hasAccess: boolean;
@@ -22,7 +28,7 @@ export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
     const interval = setInterval(() => {
       setTrendingTokens(service.getTrendingTokens(hasAccess));
       setMostBoughtTokens(service.getMostBoughtTokens(hasAccess));
-    }, 60000); // Update every minute
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [hasAccess]);
@@ -33,7 +39,7 @@ export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
         {trendingTokens.map((token, index) => (
           <Card 
             key={index}
-            className="flex items-center gap-3 p-3 min-w-[200px] bg-white/5 backdrop-blur-sm"
+            className="flex items-center gap-3 p-3 min-w-[250px] bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
           >
             <div className="flex-shrink-0">
               {token.logoUrl ? (
@@ -57,12 +63,25 @@ export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
                 ${(token.marketCap / 1000000).toFixed(2)}M
               </span>
               <div className="flex items-center gap-2">
-                <span className={cn(
-                  "text-sm",
-                  getRiskColor(token.riskScore || 5)
-                )}>
-                  Risk: {token.riskScore}
-                </span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="flex items-center gap-1">
+                        <span className={cn(
+                          "text-sm",
+                          getRiskColor(token.riskScore || 5)
+                        )}>
+                          {getRiskLabel(token.riskScore || 5)}
+                        </span>
+                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Risk Score: {token.riskScore}/10</p>
+                      <p>Lower is better</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <span className="text-sm text-muted-foreground">
                   {token.bundledBuys} buys
                 </span>

@@ -11,6 +11,7 @@ interface RiskFactors {
 }
 
 export const calculateRiskScore = (coin: Memecoin): number => {
+  console.log("Calculating risk score for:", coin.name);
   const factors: RiskFactors = {
     whaleConcentration: calculateWhaleRisk(coin),
     developerHoldings: calculateDevHoldingsRisk(coin),
