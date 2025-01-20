@@ -35,6 +35,17 @@ const Index = () => {
       <Navigation />
       
       <div className="container mx-auto pt-24 space-y-8 px-4">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent">
+            Memecoin Scanner
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Your advanced toolkit for discovering and analyzing the next big memecoins on Solana. 
+            Get real-time insights, track social metrics, and stay ahead of the market with our 
+            comprehensive scanning and analysis tools.
+          </p>
+        </div>
+
         <TokenBanner hasAccess={hasAccess || isAdmin} />
 
         {!hasAccess && !isAdmin ? (
