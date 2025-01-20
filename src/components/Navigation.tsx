@@ -3,6 +3,7 @@ import { Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { SolanaPrice } from "./SolanaPrice";
+import { WalletButton } from "./WalletButton";
 
 export const Navigation = () => {
   return (
@@ -39,6 +40,7 @@ export const Navigation = () => {
           </Sheet>
           <SolanaPrice />
         </div>
+        <WalletButton />
       </div>
     </div>
   );
