@@ -7,6 +7,7 @@ import { Memecoin } from '@/types/memecoin';
 import { TableFilters } from './TableFilters';
 import { MemecoinsTableHeader } from './TableHeader';
 import { MemecoinsTableRow } from './TableRow';
+import { useWallet } from "@solana/wallet-adapter-react";
 
 interface MemecoinsTableProps {
   coins: Memecoin[];
@@ -23,8 +24,17 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
     minSocialScore: '',
     minBundledBuys: '',
   });
+  const { publicKey } = useWallet();
+
+  // Check if user has Basic tier (this should be replaced with actual tier check)
+  const isBasicTier = localStorage.getItem(`lastPayment_${publicKey?.toString()}`)?.includes('"price":0.1');
 
   const handleSort = (field: keyof Memecoin) => {
+    if (isBasicTier) {
+      console.log("Sorting is not available in Basic tier");
+      return;
+    }
+    
     if (field === sortField) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -38,7 +48,7 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
     !coin.creatorRisk?.previousScams
   );
 
-  const filteredCoins = safeCoins.filter(coin => {
+  const filteredCoins = isBasicTier ? safeCoins : safeCoins.filter(coin => {
     const nameMatch = coin.name.toLowerCase().includes(filters.name.toLowerCase()) ||
                      coin.symbol.toLowerCase().includes(filters.name.toLowerCase());
     const dexStatusMatch = filters.dexStatus === 'all' || coin.dexStatus === filters.dexStatus;
@@ -50,7 +60,7 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
     return nameMatch && dexStatusMatch && marketCapMatch && socialScoreMatch && bundledBuysMatch;
   });
 
-  const sortedCoins = [...filteredCoins].sort((a, b) => {
+  const sortedCoins = isBasicTier ? filteredCoins : [...filteredCoins].sort((a, b) => {
     const aValue = a[sortField];
     const bValue = b[sortField];
     
@@ -69,7 +79,7 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
 
   return (
     <div className="space-y-4">
-      <TableFilters filters={filters} setFilters={setFilters} />
+      {!isBasicTier && <TableFilters filters={filters} setFilters={setFilters} />}
       
       <div className="glass-card p-4">
         <Table>

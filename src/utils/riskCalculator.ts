@@ -7,6 +7,7 @@ interface RiskFactors {
   socialSentiment: number;
   liquidityStability: number;
   contractVulnerability: number;
+  rugPullIndicators: number;
 }
 
 export const calculateRiskScore = (coin: Memecoin): number => {
@@ -17,24 +18,24 @@ export const calculateRiskScore = (coin: Memecoin): number => {
     socialSentiment: calculateSocialRisk(coin),
     liquidityStability: calculateLiquidityRisk(coin),
     contractVulnerability: calculateContractRisk(coin),
+    rugPullIndicators: calculateRugPullRisk(coin),
   };
 
-  // Weights for each factor (total = 1)
+  // Updated weights with rug pull emphasis
   const weights = {
-    whaleConcentration: 0.25,
+    whaleConcentration: 0.2,
     developerHoldings: 0.15,
-    bundledBuysRisk: 0.15,
-    socialSentiment: 0.15,
-    liquidityStability: 0.2,
+    bundledBuysRisk: 0.1,
+    socialSentiment: 0.1,
+    liquidityStability: 0.15,
     contractVulnerability: 0.1,
+    rugPullIndicators: 0.2,
   };
 
-  // Calculate weighted average
   const weightedScore = Object.entries(factors).reduce((score, [factor, value]) => {
     return score + value * weights[factor as keyof RiskFactors];
   }, 0);
 
-  // Normalize to 1-10 scale
   return Math.max(1, Math.min(10, Math.round(weightedScore * 10)));
 };
 
@@ -78,9 +79,22 @@ const calculateContractRisk = (coin: Memecoin): number => {
   return Math.min(1, risk);
 };
 
+const calculateRugPullRisk = (coin: Memecoin): number => {
+  let risk = 0;
+  
+  // Check for common rug pull indicators
+  if (coin.whaleStats?.maxHolderPercentage > 30) risk += 0.3;
+  if (coin.whaleStats?.developerHoldingPercentage > 10) risk += 0.2;
+  if (coin.liquidityStats?.totalLiquidity < 10000) risk += 0.2;
+  if (coin.creatorRisk?.previousScams > 0) risk += 0.3;
+  
+  return Math.min(1, risk);
+};
+
 export const getRiskColor = (score: number): string => {
   if (score <= 3) return "text-green-500";
-  if (score <= 6) return "text-yellow-500";
+  if (score <= 5) return "text-yellow-500";
+  if (score <= 7) return "text-orange-500";
   return "text-red-500";
 };
 

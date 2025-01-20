@@ -2,48 +2,43 @@ import { useEffect, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Bitcoin } from "lucide-react";
-
-interface Token {
-  name: string;
-  symbol: string;
-  logo?: string;
-  price?: number;
-  change24h?: number;
-}
+import TrendingTokensService from '@/services/TrendingTokensService';
+import { Memecoin } from '@/types/memecoin';
+import { getRiskColor } from '@/utils/riskCalculator';
 
 interface TokenBannerProps {
   hasAccess: boolean;
 }
 
 export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
-  const [tokens, setTokens] = useState<Token[]>([
-    {
-      name: "Sample Token 1",
-      symbol: "ST1",
-      price: 0.00123,
-      change24h: 5.2
-    },
-    {
-      name: "Sample Token 2",
-      symbol: "ST2",
-      price: 0.00045,
-      change24h: -2.8
-    },
-    // Add more sample tokens as needed
-  ]);
+  const [trendingTokens, setTrendingTokens] = useState<Memecoin[]>([]);
+  const [mostBoughtTokens, setMostBoughtTokens] = useState<Memecoin[]>([]);
+  
+  useEffect(() => {
+    const service = TrendingTokensService.getInstance();
+    setTrendingTokens(service.getTrendingTokens(hasAccess));
+    setMostBoughtTokens(service.getMostBoughtTokens(hasAccess));
+
+    const interval = setInterval(() => {
+      setTrendingTokens(service.getTrendingTokens(hasAccess));
+      setMostBoughtTokens(service.getMostBoughtTokens(hasAccess));
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [hasAccess]);
   
   return (
     <div className="w-full overflow-hidden mb-8">
       <div className="flex gap-4 animate-scroll">
-        {tokens.map((token, index) => (
+        {trendingTokens.map((token, index) => (
           <Card 
             key={index}
             className="flex items-center gap-3 p-3 min-w-[200px] bg-white/5 backdrop-blur-sm"
           >
             <div className="flex-shrink-0">
-              {token.logo ? (
+              {token.logoUrl ? (
                 <img 
-                  src={token.logo} 
+                  src={token.logoUrl} 
                   alt={token.symbol}
                   className="w-8 h-8 rounded-full"
                 />
@@ -59,14 +54,19 @@ export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
                 {token.name}
               </span>
               <span className="text-sm text-muted-foreground">
-                ${token.price?.toFixed(6)}
+                ${(token.marketCap / 1000000).toFixed(2)}M
               </span>
-              <span className={cn(
-                "text-sm",
-                token.change24h && token.change24h > 0 ? "text-green-500" : "text-red-500"
-              )}>
-                {token.change24h > 0 ? "+" : ""}{token.change24h}%
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "text-sm",
+                  getRiskColor(token.riskScore || 5)
+                )}>
+                  Risk: {token.riskScore}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {token.bundledBuys} buys
+                </span>
+              </div>
             </div>
           </Card>
         ))}
