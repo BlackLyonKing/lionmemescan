@@ -9,6 +9,12 @@ export interface LiquidityStats {
   totalLiquidity: number;
 }
 
+export interface CreatorRisk {
+  previousScams: number;
+  riskLevel: "low" | "medium" | "high";
+  lastScamDate?: string;
+}
+
 export interface Memecoin {
   name: string;
   symbol: string;
@@ -22,12 +28,9 @@ export interface Memecoin {
   contractAddress?: string;
   chainId?: number;
   bundledBuys?: number;
-  creatorRisk?: {
-    previousScams: number;
-    riskLevel: "low" | "medium" | "high";
-    lastScamDate?: string;
-  };
+  creatorRisk?: CreatorRisk;
   whaleStats?: WhaleStats;
   liquidityStats?: LiquidityStats;
   riskScore?: number;
+  logoUrl?: string;
 }

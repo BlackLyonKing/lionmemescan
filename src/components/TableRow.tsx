@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useToast } from "@/hooks/use-toast";
-import { getRiskColor, getRiskLabel } from '@/utils/riskCalculator';
+import { getRiskColor, getRiskLabel, calculateRiskScore, getRiskDescription } from '@/utils/riskCalculator';
 import {
   Tooltip,
   TooltipContent,
@@ -59,8 +59,10 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
     }
   };
 
-  const riskScoreColor = getRiskColor(coin.riskScore || 1);
-  const riskLabel = getRiskLabel(coin.riskScore || 1);
+  const riskScore = calculateRiskScore(coin);
+  const riskScoreColor = getRiskColor(riskScore);
+  const riskLabel = getRiskLabel(riskScore);
+  const riskWarnings = getRiskDescription(coin);
 
   return (
     <TableRow>
@@ -76,24 +78,22 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
           <Tooltip>
             <TooltipTrigger>
               <div className={`flex items-center gap-2 font-bold ${riskScoreColor}`}>
-                {coin.riskScore || 1}
+                {riskScore}
                 <AlertTriangle className="h-4 w-4" />
               </div>
             </TooltipTrigger>
-            <TooltipContent>
+            <TooltipContent className="w-80">
               <div className="space-y-2">
                 <p className="font-semibold">{riskLabel}</p>
-                <ul className="text-sm list-disc list-inside">
-                  {coin.whaleStats?.maxHolderPercentage > 15 && (
-                    <li>High whale concentration</li>
-                  )}
-                  {coin.bundledBuys > 2 && (
-                    <li>Suspicious buying patterns</li>
-                  )}
-                  {coin.liquidityStats?.percentageChange24h < -20 && (
-                    <li>Significant liquidity decrease</li>
-                  )}
-                </ul>
+                {riskWarnings.length > 0 ? (
+                  <ul className="text-sm list-disc list-inside space-y-1">
+                    {riskWarnings.map((warning, index) => (
+                      <li key={index}>{warning}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm">No significant risks detected</p>
+                )}
               </div>
             </TooltipContent>
           </Tooltip>
