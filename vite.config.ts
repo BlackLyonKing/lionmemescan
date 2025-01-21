@@ -24,6 +24,11 @@ export default defineConfig({
       "@solana/wallet-adapter-phantom",
       "@solana/wallet-adapter-walletconnect",
       "@solana/wallet-adapter-react-ui",
+      "@mendable/firecrawl-js",
+      "bs58"
     ],
-  },
+    esbuildOptions: {
+      target: 'esnext'
+    }
+  }
 });
