@@ -1,6 +1,6 @@
 import { WalletButton } from "@/components/WalletButton";
 import { PaymentGate } from "@/components/PaymentGate";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import TrendingBanner from "@/components/TrendingBanner";
 import { UserProfile } from "@/components/UserProfile";
 import { TokenBanner } from "@/components/TokenBanner";
@@ -8,6 +8,7 @@ import { BacktestingDashboard } from "@/components/BacktestingDashboard";
 import { Navigation } from "@/components/Navigation";
 import { MemecoinsTable } from "@/components/MemecoinsTable";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { TopTokensBanner } from "@/components/TopTokensBanner";
 
 const mockMemecoins = [
   {
@@ -27,22 +28,14 @@ const mockMemecoins = [
 
 const Index = () => {
   const [hasAccess, setHasAccess] = useState(false);
-  const { publicKey, connected } = useWallet();
+  const { publicKey } = useWallet();
   const isAdmin = publicKey?.toBase58() === "4UGRoYBFRufAm7HVSSiQbwp9ETa9gFWzyQ4czwaeVAv3";
 
-  useEffect(() => {
-    console.log("Index component mounted");
-    console.log("Wallet connection status:", { connected, publicKey: publicKey?.toBase58() });
-    return () => {
-      console.log("Index component unmounted");
-    };
-  }, [connected, publicKey]);
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <Navigation />
       
-      <main className="container mx-auto pt-24 space-y-8 px-4 pb-8">
+      <div className="container mx-auto pt-24 space-y-8 px-4">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent">
             Memecoin Scanner
@@ -54,7 +47,8 @@ const Index = () => {
           </p>
         </div>
 
-        {connected && <TokenBanner hasAccess={hasAccess || isAdmin} />}
+        <TopTokensBanner />
+        <TokenBanner hasAccess={hasAccess || isAdmin} />
 
         {!hasAccess && !isAdmin ? (
           <PaymentGate onPaymentSuccess={() => setHasAccess(true)} />
@@ -66,7 +60,7 @@ const Index = () => {
             <UserProfile />
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 };
