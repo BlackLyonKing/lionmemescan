@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dialog";
 
 const RECIPIENT_ADDRESS = "3EoyjLFyrMNfuf1FxvQ1Qvxmes7JmopWF4ehu3xp6hnG";
-const SOLANA_RPC_ENDPOINT = "https://api.mainnet-beta.solana.com";
 const ACCESS_DURATION = {
   TRIAL: 40 * 60 * 60 * 1000, // 40 hours in milliseconds
   PAID: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
