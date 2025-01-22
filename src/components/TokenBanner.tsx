@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Bitcoin, TrendingUp } from "lucide-react";
+import { Bitcoin, TrendingUp, Loader } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Tooltip,
@@ -24,27 +24,52 @@ interface TokenBannerProps {
 }
 
 export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
-  const { data: topTokens, isLoading } = useQuery({
+  const { data: topTokens, isLoading, error } = useQuery({
     queryKey: ["topSolanaTokens"],
     queryFn: async () => {
-      console.log("Fetching top Solana tokens from DEXScreener (hourly update)...");
-      const response = await fetch("https://api.dexscreener.com/latest/dex/tokens/solana");
-      const data = await response.json();
-      
-      return data.pairs
-        .sort((a: any, b: any) => b.volume.h24 - a.volume.h24)
-        .slice(0, 20)
-        .map((pair: any) => ({
-          symbol: pair.baseToken.symbol,
-          name: pair.baseToken.name,
-          price: parseFloat(pair.priceUsd),
-          priceChange24h: parseFloat(pair.priceChange.h24),
-          volume24h: parseFloat(pair.volume.h24),
-          logoUrl: pair.baseToken.logoUrl
-        }));
+      console.log("Fetching top Solana tokens from DEXScreener...");
+      try {
+        const response = await fetch("https://api.dexscreener.com/latest/dex/tokens/solana");
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}`);
+        }
+        const data = await response.json();
+        console.log("Successfully fetched token data:", data);
+        
+        if (!data.pairs || !Array.isArray(data.pairs)) {
+          console.error("Invalid data format received:", data);
+          throw new Error("Invalid data format received from API");
+        }
+
+        return data.pairs
+          .sort((a: any, b: any) => b.volume.h24 - a.volume.h24)
+          .slice(0, 20)
+          .map((pair: any) => ({
+            symbol: pair.baseToken.symbol,
+            name: pair.baseToken.name,
+            price: parseFloat(pair.priceUsd),
+            priceChange24h: parseFloat(pair.priceChange.h24),
+            volume24h: parseFloat(pair.volume.h24),
+            logoUrl: pair.baseToken.logoUrl
+          }));
+      } catch (error) {
+        console.error("Error fetching token data:", error);
+        throw error;
+      }
     },
-    refetchInterval: 3600000, // Refresh every hour (3600000 ms) instead of every minute
+    refetchInterval: 3600000, // Refresh every hour
+    retry: 3,
+    staleTime: 300000, // Consider data stale after 5 minutes
   });
+
+  if (error) {
+    console.error("Error in TokenBanner:", error);
+    return (
+      <div className="w-full overflow-hidden mb-8 p-4 text-center">
+        <p className="text-red-500">Failed to load token data. Please try again later.</p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -53,12 +78,10 @@ export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
           {[...Array(5)].map((_, i) => (
             <Card 
               key={i}
-              className="flex items-center gap-3 p-3 min-w-[250px] bg-white/5 backdrop-blur-sm animate-pulse"
+              className="flex items-center gap-3 p-3 min-w-[250px] bg-white/5 backdrop-blur-sm"
             >
-              <div className="w-8 h-8 rounded-full bg-gray-600" />
-              <div className="space-y-2">
-                <div className="h-4 w-24 bg-gray-600 rounded" />
-                <div className="h-4 w-32 bg-gray-600 rounded" />
+              <div className="flex items-center justify-center w-full">
+                <Loader className="w-6 h-6 animate-spin text-crypto-purple" />
               </div>
             </Card>
           ))}
@@ -67,10 +90,18 @@ export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
     );
   }
 
+  if (!topTokens || topTokens.length === 0) {
+    return (
+      <div className="w-full overflow-hidden mb-8 p-4 text-center">
+        <p>No token data available.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full overflow-hidden mb-8">
       <div className="flex gap-4 animate-scroll">
-        {topTokens?.map((token: TokenData, index: number) => (
+        {topTokens.map((token: TokenData, index: number) => (
           <Card 
             key={index}
             className="flex items-center gap-3 p-3 min-w-[250px] bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
