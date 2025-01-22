@@ -1,11 +1,12 @@
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { useTrialCountdown } from "@/hooks/useTrialCountdown";
 import { supabase } from "@/integrations/supabase/client";
+import { useSolanaPrice } from "@/hooks/useSolanaPrice";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-const RECIPIENT_ADDRESS = "YOUR_WALLET_ADDRESS"; // Replace with your wallet address
+const RECIPIENT_ADDRESS = "3EoyjLFyrMNfuf1FxvQ1Qvxmes7JmopWF4ehu3xp6hnG";
 const ACCESS_DURATION = {
   TRIAL: 40 * 60 * 60 * 1000, // 40 hours in milliseconds
   PAID: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
@@ -74,13 +75,12 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   const [hasValidAccess, setHasValidAccess] = useState(false);
   const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
   const [selectedTier, setSelectedTier] = useState<PricingTier | null>(null);
-  const [solPrice, setSolPrice] = useState<number>(0);
+  const { data: solPrice } = useSolanaPrice();
   const { isTrialActive, startTrial } = useTrialCountdown();
   const [showTrialConfirmation, setShowTrialConfirmation] = useState(false);
 
   useEffect(() => {
     checkAccess();
-    setSolPrice(20);
   }, [publicKey]);
 
   const checkAccess = () => {
@@ -100,23 +100,57 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   };
 
   const handlePaymentConfirmation = async () => {
-    if (!publicKey || !selectedTier) return;
+    if (!publicKey || !selectedTier) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       setIsProcessing(true);
       console.log("Processing payment for tier:", selectedTier.name);
 
-      const connection = new Connection("https://api.devnet.solana.com", "confirmed");
-      const recipientPubKey = new PublicKey(RECIPIENT_ADDRESS);
+      const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+      
+      // Validate recipient address
+      let recipientPubKey: PublicKey;
+      try {
+        recipientPubKey = new PublicKey(RECIPIENT_ADDRESS);
+        console.log("Valid recipient address:", recipientPubKey.toString());
+      } catch (error) {
+        console.error("Invalid recipient address:", error);
+        throw new Error("Invalid recipient address configuration");
+      }
+
+      // Calculate payment amount in lamports
+      const lamports = LAMPORTS_PER_SOL * selectedTier.price;
+      console.log("Payment amount in lamports:", lamports);
+
+      // Check if user has enough balance
+      const balance = await connection.getBalance(publicKey);
+      console.log("User balance:", balance / LAMPORTS_PER_SOL, "SOL");
+      
+      if (balance < lamports) {
+        throw new Error(`Insufficient balance. You need ${selectedTier.price} SOL to purchase this tier.`);
+      }
 
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: recipientPubKey,
-          lamports: LAMPORTS_PER_SOL * selectedTier.price,
+          lamports,
         })
       );
 
+      // Get the latest blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      console.log("Sending transaction...");
       const signature = await sendTransaction(transaction, connection);
       console.log("Transaction sent:", signature);
 
@@ -124,7 +158,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       console.log("Transaction confirmed:", confirmation);
 
       if (confirmation.value.err) {
-        throw new Error("Transaction failed");
+        throw new Error("Transaction failed to confirm");
       }
 
       const paymentTime = Date.now();
@@ -145,7 +179,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       console.error("Payment error:", error);
       toast({
         title: "Payment Failed",
-        description: "There was an error processing your payment. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error processing your payment. Please try again.",
         variant: "destructive",
       });
     } finally {
