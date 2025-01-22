@@ -7,6 +7,7 @@ import { BacktestingDashboard } from "@/components/BacktestingDashboard";
 import { Navigation } from "@/components/Navigation";
 import { MemecoinsTable } from "@/components/MemecoinsTable";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const mockMemecoins = [
   {
@@ -27,8 +28,20 @@ const mockMemecoins = [
 const Index = () => {
   console.log("Rendering Index component"); // Debug log
   const [hasAccess, setHasAccess] = useState(false);
-  const { publicKey } = useWallet();
+  const { publicKey, connecting } = useWallet();
   const isAdmin = publicKey?.toBase58() === "4UGRoYBFRufAm7HVSSiQbwp9ETa9gFWzyQ4czwaeVAv3";
+
+  // Loading state while wallet is connecting
+  if (connecting) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <Navigation />
+        <div className="container mx-auto pt-24 space-y-8 px-4">
+          <Skeleton className="w-full h-[200px] rounded-lg" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
