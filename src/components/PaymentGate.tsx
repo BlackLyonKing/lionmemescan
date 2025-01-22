@@ -72,6 +72,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasValidAccess, setHasValidAccess] = useState(false);
+  const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
   const [selectedTier, setSelectedTier] = useState<PricingTier | null>(null);
   const [solPrice, setSolPrice] = useState<number>(0);
   const { isTrialActive, startTrial } = useTrialCountdown();
@@ -95,6 +96,61 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
         setHasValidAccess(true);
         onPaymentSuccess();
       }
+    }
+  };
+
+  const handlePaymentConfirmation = async () => {
+    if (!publicKey || !selectedTier) return;
+    
+    try {
+      setIsProcessing(true);
+      console.log("Processing payment for tier:", selectedTier.name);
+
+      const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+      const recipientPubKey = new PublicKey(RECIPIENT_ADDRESS);
+
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: recipientPubKey,
+          lamports: LAMPORTS_PER_SOL * selectedTier.price,
+        })
+      );
+
+      const signature = await sendTransaction(transaction, connection);
+      console.log("Transaction sent:", signature);
+
+      const confirmation = await connection.confirmTransaction(signature, "confirmed");
+      console.log("Transaction confirmed:", confirmation);
+
+      if (confirmation.value.err) {
+        throw new Error("Transaction failed");
+      }
+
+      const paymentTime = Date.now();
+      localStorage.setItem(
+        `lastPayment_${publicKey.toString()}`,
+        JSON.stringify({ timestamp: paymentTime, duration: selectedTier.duration })
+      );
+      
+      toast({
+        title: "Payment Successful",
+        description: `You now have access to ${selectedTier.name} features!`,
+      });
+      
+      setHasValidAccess(true);
+      onPaymentSuccess();
+
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast({
+        title: "Payment Failed",
+        description: "There was an error processing your payment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+      setShowPaymentConfirmation(false);
     }
   };
 
@@ -188,55 +244,8 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       return;
     }
 
-    try {
-      setIsProcessing(true);
-      console.log("Initiating payment process for tier:", tier.name);
-
-      const connection = new Connection("https://api.devnet.solana.com", "confirmed");
-      const recipientPubKey = new PublicKey(RECIPIENT_ADDRESS);
-
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: recipientPubKey,
-          lamports: LAMPORTS_PER_SOL * tier.price,
-        })
-      );
-
-      const signature = await sendTransaction(transaction, connection);
-      console.log("Transaction sent:", signature);
-
-      const confirmation = await connection.confirmTransaction(signature, "confirmed");
-      console.log("Transaction confirmed:", confirmation);
-
-      if (confirmation.value.err) {
-        throw new Error("Transaction failed");
-      }
-
-      const paymentTime = Date.now();
-      localStorage.setItem(
-        `lastPayment_${publicKey.toString()}`,
-        JSON.stringify({ timestamp: paymentTime, duration: tier.duration })
-      );
-      
-      toast({
-        title: "Payment Successful",
-        description: `You now have access to ${tier.name} features!`,
-      });
-      
-      setHasValidAccess(true);
-      onPaymentSuccess();
-
-    } catch (error) {
-      console.error("Payment error:", error);
-      toast({
-        title: "Payment Failed",
-        description: "There was an error processing your payment. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
+    setSelectedTier(tier);
+    setShowPaymentConfirmation(true);
   };
 
   if (hasValidAccess) {
@@ -252,6 +261,30 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
           </p>
         </div>
       ) : null}
+
+      <Dialog open={showPaymentConfirmation} onOpenChange={setShowPaymentConfirmation}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Payment</DialogTitle>
+            <DialogDescription>
+              You are about to pay {selectedTier?.price} SOL for the {selectedTier?.name} tier.
+              <ul className="list-disc pl-6 mt-2 space-y-2">
+                <li>You will have access to all features for 30 days</li>
+                <li>Payment is non-refundable</li>
+                <li>Your wallet will be charged {selectedTier?.price} SOL (~${(selectedTier?.price || 0 * solPrice).toFixed(2)} USD)</li>
+              </ul>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPaymentConfirmation(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handlePaymentConfirmation} disabled={isProcessing}>
+              {isProcessing ? "Processing..." : "Confirm Payment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showTrialConfirmation} onOpenChange={setShowTrialConfirmation}>
         <DialogContent>
