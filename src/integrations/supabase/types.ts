@@ -9,7 +9,89 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      crawled_memecoins: {
+        Row: {
+          bundled_buys: number | null
+          created_at: string | null
+          dex_status: string | null
+          graduated: boolean | null
+          id: string
+          market_cap: number | null
+          meta: string[] | null
+          name: string
+          social_score: number | null
+          symbol: string | null
+          thread_comments: number | null
+          thread_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bundled_buys?: number | null
+          created_at?: string | null
+          dex_status?: string | null
+          graduated?: boolean | null
+          id?: string
+          market_cap?: number | null
+          meta?: string[] | null
+          name: string
+          social_score?: number | null
+          symbol?: string | null
+          thread_comments?: number | null
+          thread_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bundled_buys?: number | null
+          created_at?: string | null
+          dex_status?: string | null
+          graduated?: boolean | null
+          id?: string
+          market_cap?: number | null
+          meta?: string[] | null
+          name?: string
+          social_score?: number | null
+          symbol?: string | null
+          thread_comments?: number | null
+          thread_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      memecoin_analysis: {
+        Row: {
+          analysis: string
+          created_at: string | null
+          growth_potential_score: number | null
+          id: string
+          memecoin_id: string | null
+          risk_score: number | null
+        }
+        Insert: {
+          analysis: string
+          created_at?: string | null
+          growth_potential_score?: number | null
+          id?: string
+          memecoin_id?: string | null
+          risk_score?: number | null
+        }
+        Update: {
+          analysis?: string
+          created_at?: string | null
+          growth_potential_score?: number | null
+          id?: string
+          memecoin_id?: string | null
+          risk_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memecoin_analysis_memecoin_id_fkey"
+            columns: ["memecoin_id"]
+            isOneToOne: false
+            referencedRelation: "crawled_memecoins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

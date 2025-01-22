@@ -16,6 +16,7 @@ import Alerts from "./pages/Alerts";
 import Portfolio from "./pages/Portfolio";
 import Profile from "./pages/Profile";
 import Scan from "./pages/Scan";
+import Transaction from "./pages/Transaction";
 
 const endpoint = clusterApiUrl("devnet");
 const network = WalletAdapterNetwork.Devnet;
@@ -52,6 +53,7 @@ const App = () => (
                 <Route path="/portfolio" element={<Portfolio />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/scan" element={<Scan />} />
+                <Route path="/transaction/:tokenSymbol" element={<Transaction />} />
               </Routes>
               <Toaster />
             </BrowserRouter>
