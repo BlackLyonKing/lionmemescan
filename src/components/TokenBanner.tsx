@@ -27,7 +27,7 @@ export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
   const { data: topTokens, isLoading } = useQuery({
     queryKey: ["topSolanaTokens"],
     queryFn: async () => {
-      console.log("Fetching top Solana tokens from DEXScreener...");
+      console.log("Fetching top Solana tokens from DEXScreener (hourly update)...");
       const response = await fetch("https://api.dexscreener.com/latest/dex/tokens/solana");
       const data = await response.json();
       
@@ -43,7 +43,7 @@ export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
           logoUrl: pair.baseToken.logoUrl
         }));
     },
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 3600000, // Refresh every hour (3600000 ms) instead of every minute
   });
 
   if (isLoading) {
