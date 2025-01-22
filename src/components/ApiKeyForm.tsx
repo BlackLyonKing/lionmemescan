@@ -16,7 +16,7 @@ export const ApiKeyForm = () => {
 
     try {
       console.log('Testing API key:', apiKey);
-      const isValid = await FirecrawlService.getApiKey();
+      const isValid = await FirecrawlService.testApiKey(apiKey);
       
       if (isValid) {
         FirecrawlService.saveApiKey(apiKey);

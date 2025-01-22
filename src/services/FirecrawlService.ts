@@ -1,5 +1,21 @@
-import { CrawlResponse } from '@/types/crawl';
 import FirecrawlApp from '@mendable/firecrawl-js';
+
+interface ErrorResponse {
+  success: false;
+  error: string;
+}
+
+interface CrawlStatusResponse {
+  success: true;
+  status: string;
+  completed: number;
+  total: number;
+  creditsUsed: number;
+  expiresAt: string;
+  data: any[];
+}
+
+type CrawlResponse = CrawlStatusResponse | ErrorResponse;
 
 export class FirecrawlService {
   private static readonly API_KEY_PREFIX = 'firecrawl_api_key';
@@ -18,73 +34,26 @@ export class FirecrawlService {
     const storageKey = this.getStorageKeyForWallet(this.API_KEY_PREFIX, walletAddress);
     localStorage.setItem(storageKey, apiKey);
     this.firecrawlApp = new FirecrawlApp({ apiKey });
-    
-    // Set expiration time (30 minutes from now)
-    const expirationTime = new Date().getTime() + 30 * 60 * 1000;
-    localStorage.setItem(`${storageKey}_expiration`, expirationTime.toString());
+    console.log('API key saved successfully');
   }
 
   static getApiKey(walletAddress?: string): string | null {
     const storageKey = this.getStorageKeyForWallet(this.API_KEY_PREFIX, walletAddress);
-    const apiKey = localStorage.getItem(storageKey);
-    const expirationTime = localStorage.getItem(`${storageKey}_expiration`);
-
-    if (!apiKey || !expirationTime) {
-      return null;
-    }
-
-    // Check if the API key has expired
-    if (new Date().getTime() > parseInt(expirationTime)) {
-      this.unlinkApiKey(walletAddress);
-      return null;
-    }
-
-    return apiKey;
+    return localStorage.getItem(storageKey);
   }
 
-  static unlinkApiKey(walletAddress?: string): void {
-    const storageKey = this.getStorageKeyForWallet(this.API_KEY_PREFIX, walletAddress);
-    localStorage.removeItem(storageKey);
-    localStorage.removeItem(`${storageKey}_expiration`);
-  }
-
-  static getPreviousKeys(walletAddress?: string): string[] {
-    const storageKey = this.getStorageKeyForWallet(this.PREVIOUS_KEYS_PREFIX, walletAddress);
-    const previousKeys = localStorage.getItem(storageKey);
-    return previousKeys ? JSON.parse(previousKeys) : [];
-  }
-
-  private static checkRateLimit(walletAddress?: string): boolean {
-    const now = Date.now();
-    const storageKey = this.getStorageKeyForWallet(this.RATE_LIMIT_PREFIX, walletAddress);
-    const rateLimit = localStorage.getItem(storageKey);
-    const rateLimitData = rateLimit ? JSON.parse(rateLimit) : { 
-      lastCrawl: 0,
-      crawlCount: 0,
-      lastScrape: 0,
-      scrapeCount: 0
-    };
-
-    // Reset counters if minute has passed
-    if (now - rateLimitData.lastCrawl >= 60000) {
-      rateLimitData.crawlCount = 0;
-    }
-    if (now - rateLimitData.lastScrape >= 60000) {
-      rateLimitData.scrapeCount = 0;
-    }
-
-    // Check limits
-    if (rateLimitData.crawlCount >= this.CRAWLS_PER_MINUTE || 
-        rateLimitData.scrapeCount >= this.SCRAPES_PER_MINUTE) {
+  static async testApiKey(apiKey: string): Promise<boolean> {
+    try {
+      console.log('Testing API key with Firecrawl API');
+      this.firecrawlApp = new FirecrawlApp({ apiKey });
+      const testResponse = await this.firecrawlApp.crawlUrl('https://example.com', {
+        limit: 1
+      });
+      return testResponse.success;
+    } catch (error) {
+      console.error('Error testing API key:', error);
       return false;
     }
-
-    // Update rate limit data
-    rateLimitData.lastCrawl = now;
-    rateLimitData.crawlCount++;
-    localStorage.setItem(storageKey, JSON.stringify(rateLimitData));
-    
-    return true;
   }
 
   static async crawlPumpFun(): Promise<CrawlResponse> {
@@ -93,11 +62,8 @@ export class FirecrawlService {
       return { success: false, error: 'API key not found' };
     }
 
-    if (!this.checkRateLimit()) {
-      return { success: false, error: 'Rate limit exceeded. Please try again later.' };
-    }
-
     try {
+      console.log('Making crawl request to Firecrawl API');
       if (!this.firecrawlApp) {
         this.firecrawlApp = new FirecrawlApp({ apiKey });
       }
