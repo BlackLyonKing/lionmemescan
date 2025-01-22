@@ -6,6 +6,14 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { useTrialCountdown } from "@/hooks/useTrialCountdown";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const RECIPIENT_ADDRESS = "YOUR_WALLET_ADDRESS"; // Replace with your wallet address
 const ACCESS_DURATION = {
@@ -67,6 +75,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   const [selectedTier, setSelectedTier] = useState<PricingTier | null>(null);
   const [solPrice, setSolPrice] = useState<number>(0);
   const { isTrialActive, startTrial } = useTrialCountdown();
+  const [showTrialConfirmation, setShowTrialConfirmation] = useState(false);
 
   useEffect(() => {
     checkAccess();
@@ -89,6 +98,81 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
     }
   };
 
+  const handleTrialConfirmation = async () => {
+    if (!publicKey) return;
+    
+    try {
+      // Create a dummy transaction to show the confirmation dialog
+      const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: publicKey,
+          lamports: 0, // Zero SOL transfer
+        })
+      );
+
+      // This will trigger the wallet confirmation dialog
+      const signature = await sendTransaction(transaction, connection);
+      console.log("Trial confirmation transaction:", signature);
+
+      // After confirmation, start the trial
+      const { data: existingTrials, error: trialError } = await supabase
+        .from('trial_attempts')
+        .select('*')
+        .eq('wallet_address', publicKey.toString());
+
+      if (trialError) throw trialError;
+
+      if (existingTrials && existingTrials.length > 0) {
+        toast({
+          title: "Trial Not Available",
+          description: "You have already used your free trial",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Record the trial attempt
+      const { error: insertError } = await supabase
+        .from('trial_attempts')
+        .insert([
+          { 
+            wallet_address: publicKey.toString(),
+            ip_address: await fetch('https://api.ipify.org?format=json')
+              .then(res => res.json())
+              .then(data => data.ip)
+          }
+        ]);
+
+      if (insertError) throw insertError;
+
+      startTrial();
+      const paymentTime = Date.now();
+      localStorage.setItem(
+        `lastPayment_${publicKey.toString()}`,
+        JSON.stringify({ timestamp: paymentTime, duration: ACCESS_DURATION.TRIAL })
+      );
+      
+      toast({
+        title: "Trial Activated",
+        description: "Your 40-hour Kings tier trial has been activated!",
+      });
+      
+      setHasValidAccess(true);
+      onPaymentSuccess();
+    } catch (error) {
+      console.error('Error starting trial:', error);
+      toast({
+        title: "Error",
+        description: "Could not start trial. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setShowTrialConfirmation(false);
+    }
+  };
+
   const handlePayment = async (tier: PricingTier) => {
     if (!publicKey) {
       toast({
@@ -100,60 +184,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
     }
 
     if (tier.price === 0) {
-      try {
-        // Check for existing trial attempts
-        const { data: existingTrials, error: trialError } = await supabase
-          .from('trial_attempts')
-          .select('*')
-          .eq('wallet_address', publicKey.toString());
-
-        if (trialError) throw trialError;
-
-        if (existingTrials && existingTrials.length > 0) {
-          toast({
-            title: "Trial Not Available",
-            description: "You have already used your free trial",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        // Record the trial attempt
-        const { error: insertError } = await supabase
-          .from('trial_attempts')
-          .insert([
-            { 
-              wallet_address: publicKey.toString(),
-              ip_address: await fetch('https://api.ipify.org?format=json')
-                .then(res => res.json())
-                .then(data => data.ip)
-            }
-          ]);
-
-        if (insertError) throw insertError;
-
-        startTrial();
-        const paymentTime = Date.now();
-        localStorage.setItem(
-          `lastPayment_${publicKey.toString()}`,
-          JSON.stringify({ timestamp: paymentTime, duration: tier.duration })
-        );
-        
-        toast({
-          title: "Trial Activated",
-          description: "Your 40-hour Kings tier trial has been activated!",
-        });
-        
-        setHasValidAccess(true);
-        onPaymentSuccess();
-      } catch (error) {
-        console.error('Error starting trial:', error);
-        toast({
-          title: "Error",
-          description: "Could not start trial. Please try again.",
-          variant: "destructive",
-        });
-      }
+      setShowTrialConfirmation(true);
       return;
     }
 
@@ -221,6 +252,30 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
           </p>
         </div>
       ) : null}
+
+      <Dialog open={showTrialConfirmation} onOpenChange={setShowTrialConfirmation}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Free Trial</DialogTitle>
+            <DialogDescription>
+              By starting the free trial, you acknowledge that:
+              <ul className="list-disc pl-6 mt-2 space-y-2">
+                <li>You will have access to all Kings tier features for 40 hours</li>
+                <li>Your wallet will be automatically disconnected after the trial period ends</li>
+                <li>You can only use one free trial per wallet address</li>
+              </ul>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTrialConfirmation(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleTrialConfirmation}>
+              Confirm Trial
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="text-center mb-12">
         <h2 className="text-4xl font-bold bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent mb-4">
