@@ -139,35 +139,39 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       // Initialize connection with fallback RPC endpoints
       const rpcEndpoints = [
         "https://api.mainnet-beta.solana.com",
-        "https://solana-mainnet.g.alchemy.com/v2/demo",
-        "https://rpc.ankr.com/solana"
+        "https://solana-api.projectserum.com",
+        "https://rpc.ankr.com/solana",
+        "https://solana.public-rpc.com"
       ];
 
       let connection: Connection | null = null;
-      let connectionError: Error | null = null;
+      let blockHash: string | null = null;
 
       // Try each RPC endpoint until one works
       for (const endpoint of rpcEndpoints) {
         try {
+          console.log("Attempting to connect to RPC endpoint:", endpoint);
           const tempConnection = new Connection(endpoint, {
             commitment: 'confirmed',
             confirmTransactionInitialTimeout: 60000,
           });
-          // Test the connection
-          await tempConnection.getLatestBlockhash();
+
+          // Test the connection by getting the latest blockhash
+          const { blockhash } = await tempConnection.getLatestBlockhash('finalized');
+          blockHash = blockhash;
           connection = tempConnection;
           console.log("Successfully connected to RPC endpoint:", endpoint);
           break;
         } catch (error) {
           console.error(`Failed to connect to ${endpoint}:`, error);
-          connectionError = error as Error;
+          continue;
         }
       }
 
-      if (!connection) {
-        throw new Error(`Failed to connect to any RPC endpoint: ${connectionError?.message}`);
+      if (!connection || !blockHash) {
+        throw new Error("Failed to connect to any RPC endpoint");
       }
-      
+
       // Validate recipient address
       let recipientPubKey: PublicKey;
       try {
@@ -179,7 +183,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       }
 
       // Calculate payment amount in lamports
-      const lamports = LAMPORTS_PER_SOL * selectedTier.price;
+      const lamports = Math.floor(LAMPORTS_PER_SOL * selectedTier.price);
       console.log("Payment amount in lamports:", lamports);
 
       try {
@@ -192,7 +196,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
         }
       } catch (error) {
         console.error("Error checking balance:", error);
-        throw new Error("Unable to check wallet balance. Please try again or use a different wallet.");
+        throw new Error("Unable to check wallet balance. Please try again.");
       }
 
       // Create and send transaction with retry logic
@@ -211,8 +215,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
             })
           );
 
-          const { blockhash } = await connection.getLatestBlockhash('finalized');
-          transaction.recentBlockhash = blockhash;
+          transaction.recentBlockhash = blockHash;
           transaction.feePayer = publicKey;
 
           console.log("Sending transaction...");
@@ -221,14 +224,14 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
 
           const confirmation = await connection.confirmTransaction({
             signature,
-            blockhash,
+            blockhash: blockHash,
             lastValidBlockHeight: await connection.getBlockHeight(),
           });
           
-          console.log("Transaction confirmed:", confirmation);
+          console.log("Transaction confirmation:", confirmation);
 
           if (confirmation.value.err) {
-            throw new Error("Transaction failed to confirm");
+            throw new Error(`Transaction failed to confirm: ${confirmation.value.err}`);
           }
 
           // Transaction successful, break the retry loop
@@ -245,7 +248,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
           
           setHasValidAccess(true);
           onPaymentSuccess();
-          break;
+          return;
 
         } catch (error) {
           console.error(`Transaction attempt ${attempt} failed:`, error);
