@@ -26,6 +26,7 @@ const mockMemecoins = [
 ];
 
 const Index = () => {
+  console.log("Rendering Index component"); // Debug log
   const [hasAccess, setHasAccess] = useState(false);
   const { publicKey } = useWallet();
   const isAdmin = publicKey?.toBase58() === "4UGRoYBFRufAm7HVSSiQbwp9ETa9gFWzyQ4czwaeVAv3";
