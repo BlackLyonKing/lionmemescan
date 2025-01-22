@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { AIInsights } from './AIInsights';
 
 interface MemecoinsTableRowProps {
   coin: Memecoin;
@@ -220,32 +221,35 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
         )}
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            placeholder={`Min ${MIN_SOL_AMOUNT} SOL`}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-24"
-            min={MIN_SOL_AMOUNT}
-            step="0.01"
-          />
-          <div className="flex gap-2">
-            <Button
-              onClick={handleBuy}
-              variant="default"
-              className="bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90"
-            >
-              Buy
-            </Button>
-            <Button
-              onClick={handleSell}
-              variant="outline"
-              className="border-crypto-purple text-crypto-purple hover:bg-crypto-purple/10"
-            >
-              Sell
-            </Button>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              placeholder={`Min ${MIN_SOL_AMOUNT} SOL`}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-24"
+              min={MIN_SOL_AMOUNT}
+              step="0.01"
+            />
+            <div className="flex gap-2">
+              <Button
+                onClick={handleBuy}
+                variant="default"
+                className="bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90"
+              >
+                Buy
+              </Button>
+              <Button
+                onClick={handleSell}
+                variant="outline"
+                className="border-crypto-purple text-crypto-purple hover:bg-crypto-purple/10"
+              >
+                Sell
+              </Button>
+            </div>
           </div>
+          <AIInsights coin={coin} />
         </div>
       </TableCell>
     </TableRow>
