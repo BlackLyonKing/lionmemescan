@@ -27,17 +27,16 @@ const mockMemecoins = [
 
 const Index = () => {
   const [hasAccess, setHasAccess] = useState(false);
-  const { publicKey } = useWallet();
+  const { publicKey, connected } = useWallet();
   const isAdmin = publicKey?.toBase58() === "4UGRoYBFRufAm7HVSSiQbwp9ETa9gFWzyQ4czwaeVAv3";
 
   useEffect(() => {
     console.log("Index component mounted");
+    console.log("Wallet connection status:", { connected, publicKey: publicKey?.toBase58() });
     return () => {
       console.log("Index component unmounted");
     };
-  }, []);
-
-  console.log("Index page rendering", { hasAccess, isAdmin, publicKey: publicKey?.toBase58() });
+  }, [connected, publicKey]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -55,7 +54,7 @@ const Index = () => {
           </p>
         </div>
 
-        <TokenBanner hasAccess={hasAccess || isAdmin} />
+        {connected && <TokenBanner hasAccess={hasAccess || isAdmin} />}
 
         {!hasAccess && !isAdmin ? (
           <PaymentGate onPaymentSuccess={() => setHasAccess(true)} />
