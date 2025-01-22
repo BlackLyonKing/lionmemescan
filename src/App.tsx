@@ -16,7 +16,6 @@ import Alerts from "./pages/Alerts";
 import Portfolio from "./pages/Portfolio";
 import Profile from "./pages/Profile";
 import Scan from "./pages/Scan";
-import Transaction from "./pages/Transaction";
 
 const endpoint = clusterApiUrl("devnet");
 const network = WalletAdapterNetwork.Devnet;
@@ -25,7 +24,7 @@ const wallets = [
   new WalletConnectWalletAdapter({ 
     network,
     options: {
-      projectId: "your-project-id", // Replace with your WalletConnect project ID
+      projectId: "your-project-id",
       metadata: {
         name: "Memecoin Scanner",
         description: "Scan and analyze memecoins",
@@ -36,7 +35,6 @@ const wallets = [
   })
 ];
 
-// Create a client
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -53,7 +51,6 @@ const App = () => (
                 <Route path="/portfolio" element={<Portfolio />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/scan" element={<Scan />} />
-                <Route path="/transaction/:tokenSymbol" element={<Transaction />} />
               </Routes>
               <Toaster />
             </BrowserRouter>

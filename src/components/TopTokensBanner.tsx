@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { Connection, PublicKey, Transaction as SolanaTransaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { useToast } from "@/components/ui/use-toast";
 
 interface TopToken {
   symbol: string;
@@ -11,7 +13,8 @@ interface TopToken {
 }
 
 export const TopTokensBanner = () => {
-  const navigate = useNavigate();
+  const { connected, publicKey, sendTransaction } = useWallet();
+  const { toast } = useToast();
 
   const { data: topTokens, isLoading } = useQuery({
     queryKey: ["topTokens"],
@@ -31,8 +34,51 @@ export const TopTokensBanner = () => {
     refetchInterval: 60000, // Refresh every minute
   });
 
-  const handleTokenClick = (symbol: string) => {
-    navigate(`/transaction/${symbol}`);
+  const handleTokenPurchase = async (token: TopToken) => {
+    if (!connected || !publicKey) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to proceed",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
+      const PLATFORM_FEE_PERCENTAGE = 0.5;
+      const MIN_SOL_AMOUNT = 0.02;
+      
+      const solAmount = MIN_SOL_AMOUNT; // Default to minimum amount
+      const platformFee = solAmount * (PLATFORM_FEE_PERCENTAGE / 100);
+      const platformFeeInLamports = Math.floor(platformFee * LAMPORTS_PER_SOL);
+
+      const transaction = new SolanaTransaction();
+      const platformWallet = new PublicKey("3EoyjLFyrMNfuf1FxvQ1Qvxmes7JmopWF4ehu3xp6hnG");
+
+      transaction.add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: platformWallet,
+          lamports: platformFeeInLamports,
+        })
+      );
+
+      const signature = await sendTransaction(transaction, connection);
+      
+      toast({
+        title: "Transaction Initiated",
+        description: `Transaction sent with signature: ${signature.slice(0, 8)}...`,
+      });
+
+    } catch (error) {
+      console.error("Transaction error:", error);
+      toast({
+        title: "Transaction Failed",
+        description: "There was an error processing your transaction",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -52,7 +98,7 @@ export const TopTokensBanner = () => {
           <Card
             key={index}
             className="flex-shrink-0 p-4 cursor-pointer hover:scale-105 transition-transform duration-200 bg-white/5 backdrop-blur-sm"
-            onClick={() => handleTokenClick(token.symbol)}
+            onClick={() => handleTokenPurchase(token)}
           >
             <div className="space-y-2">
               <div className="font-semibold">{token.symbol}</div>
