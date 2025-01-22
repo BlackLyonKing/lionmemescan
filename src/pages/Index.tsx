@@ -30,11 +30,13 @@ const Index = () => {
   const { publicKey } = useWallet();
   const isAdmin = publicKey?.toBase58() === "4UGRoYBFRufAm7HVSSiQbwp9ETa9gFWzyQ4czwaeVAv3";
 
+  console.log("Index page rendering", { hasAccess, isAdmin, publicKey: publicKey?.toBase58() });
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="container mx-auto pt-24 space-y-8 px-4">
+      <main className="container mx-auto pt-24 space-y-8 px-4 pb-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent">
             Memecoin Scanner
@@ -58,7 +60,7 @@ const Index = () => {
             <UserProfile />
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };
