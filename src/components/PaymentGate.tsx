@@ -1,11 +1,4 @@
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";I understand you're getting a 403 Access Forbidden error when trying to check the wallet balance. This error occurs because we're trying to access the Solana mainnet without proper RPC configuration. Let's fix this by using a reliable RPC endpoint.
-
-<lov-code>
-Let's update the PaymentGate component to use a more reliable RPC endpoint:
-
-<lov-write file_path="src/components/PaymentGate.tsx">
-import { useWallet } from "@solana/wallet-adapter-react";
 import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
