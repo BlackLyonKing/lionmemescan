@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import FirecrawlApp from '@mendable/firecrawl-js';
 
 interface ErrorResponse {
   success: false;
@@ -19,9 +18,20 @@ interface CrawlStatusResponse {
 type CrawlResponse = CrawlStatusResponse | ErrorResponse;
 
 export class FirecrawlService {
+  private static API_KEY_STORAGE_KEY = 'firecrawl_api_key';
+
+  static saveApiKey(apiKey: string): void {
+    localStorage.setItem(this.API_KEY_STORAGE_KEY, apiKey);
+    console.log('API key saved successfully');
+  }
+
+  static getApiKey(): string | null {
+    return localStorage.getItem(this.API_KEY_STORAGE_KEY);
+  }
+
   static async testApiKey(apiKey: string): Promise<boolean> {
     try {
-      console.log('Testing API key with Firecrawl API');
+      console.log('Testing API key with Supabase function');
       const { data, error } = await supabase.functions.invoke('test-firecrawl-key', {
         body: { apiKey }
       });
@@ -40,7 +50,7 @@ export class FirecrawlService {
 
   static async crawlPumpFun(): Promise<CrawlResponse> {
     try {
-      console.log('Making crawl request to Firecrawl API via Supabase');
+      console.log('Making crawl request to Supabase function');
       const { data, error } = await supabase.functions.invoke('crawl-pump-fun');
 
       if (error) {

@@ -20,7 +20,7 @@ export const CrawlForm = () => {
     try {
       const result = await FirecrawlService.crawlPumpFun();
       
-      if (result.success) {
+      if ('success' in result && result.success) {
         toast({
           title: "Success",
           description: "Crawl completed successfully",
@@ -30,7 +30,7 @@ export const CrawlForm = () => {
       } else {
         toast({
           title: "Error",
-          description: result.error || "Failed to crawl website",
+          description: 'error' in result ? result.error : "Failed to crawl website",
           variant: "destructive",
           duration: 3000,
         });
