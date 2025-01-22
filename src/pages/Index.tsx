@@ -2,7 +2,6 @@ import { PaymentGate } from "@/components/PaymentGate";
 import { useState } from "react";
 import TrendingBanner from "@/components/TrendingBanner";
 import { UserProfile } from "@/components/UserProfile";
-import { TokenBanner } from "@/components/TokenBanner";
 import { BacktestingDashboard } from "@/components/BacktestingDashboard";
 import { Navigation } from "@/components/Navigation";
 import { MemecoinsTable } from "@/components/MemecoinsTable";
@@ -58,8 +57,6 @@ const Index = () => {
             comprehensive scanning and analysis tools.
           </p>
         </div>
-
-        {publicKey && <TokenBanner hasAccess={hasAccess || isAdmin} />}
 
         {!hasAccess && !isAdmin ? (
           <PaymentGate onPaymentSuccess={() => setHasAccess(true)} />
