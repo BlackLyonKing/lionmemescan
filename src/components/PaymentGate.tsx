@@ -5,10 +5,11 @@ import { useToast } from "@/components/ui/use-toast";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { useTrialCountdown } from "@/hooks/useTrialCountdown";
+import { supabase } from "@/integrations/supabase/client";
 
 const RECIPIENT_ADDRESS = "YOUR_WALLET_ADDRESS"; // Replace with your wallet address
 const ACCESS_DURATION = {
-  TRIAL: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+  TRIAL: 40 * 60 * 60 * 1000, // 40 hours in milliseconds
   PAID: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
 };
 
@@ -24,15 +25,17 @@ const PRICING_TIERS: PricingTier[] = [
     name: "Free Trial",
     price: 0,
     features: [
-      "Basic memecoin scanning",
-      "Limited social metrics",
-      "Basic trend detection"
+      "Full Kings tier access for 40 hours",
+      "Advanced memecoin scanning",
+      "Real-time social metrics",
+      "AI-powered analysis",
+      "Priority support"
     ],
     duration: ACCESS_DURATION.TRIAL,
   },
   {
     name: "Basic",
-    price: 0.1,
+    price: 0.1, // Will be calculated based on $25 equivalent
     features: [
       "Advanced memecoin scanning",
       "Full social metrics analysis",
@@ -43,13 +46,14 @@ const PRICING_TIERS: PricingTier[] = [
   },
   {
     name: "Kings",
-    price: 0.5,
+    price: 0.5, // Will be calculated based on $150 equivalent
     features: [
       "Premium memecoin scanning",
       "Real-time social metrics",
       "Instant trend alerts",
       "Advanced risk assessment",
-      "Priority support"
+      "Priority support",
+      "AI-powered insights"
     ],
     duration: ACCESS_DURATION.PAID,
   },
@@ -96,19 +100,60 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
     }
 
     if (tier.price === 0) {
-      // Start trial only when user explicitly chooses free tier
-      startTrial();
-      const paymentTime = Date.now();
-      localStorage.setItem(
-        `lastPayment_${publicKey.toString()}`,
-        JSON.stringify({ timestamp: paymentTime, duration: tier.duration })
-      );
-      toast({
-        title: "Trial Activated",
-        description: "Your 40-hour trial has been activated!",
-      });
-      setHasValidAccess(true);
-      onPaymentSuccess();
+      try {
+        // Check for existing trial attempts
+        const { data: existingTrials, error: trialError } = await supabase
+          .from('trial_attempts')
+          .select('*')
+          .eq('wallet_address', publicKey.toString());
+
+        if (trialError) throw trialError;
+
+        if (existingTrials && existingTrials.length > 0) {
+          toast({
+            title: "Trial Not Available",
+            description: "You have already used your free trial",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Record the trial attempt
+        const { error: insertError } = await supabase
+          .from('trial_attempts')
+          .insert([
+            { 
+              wallet_address: publicKey.toString(),
+              ip_address: await fetch('https://api.ipify.org?format=json')
+                .then(res => res.json())
+                .then(data => data.ip)
+            }
+          ]);
+
+        if (insertError) throw insertError;
+
+        startTrial();
+        const paymentTime = Date.now();
+        localStorage.setItem(
+          `lastPayment_${publicKey.toString()}`,
+          JSON.stringify({ timestamp: paymentTime, duration: tier.duration })
+        );
+        
+        toast({
+          title: "Trial Activated",
+          description: "Your 40-hour Kings tier trial has been activated!",
+        });
+        
+        setHasValidAccess(true);
+        onPaymentSuccess();
+      } catch (error) {
+        console.error('Error starting trial:', error);
+        toast({
+          title: "Error",
+          description: "Could not start trial. Please try again.",
+          variant: "destructive",
+        });
+      }
       return;
     }
 

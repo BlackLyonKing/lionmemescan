@@ -9,6 +9,24 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      cached_top_tokens: {
+        Row: {
+          id: string
+          last_updated: string | null
+          token_data: Json
+        }
+        Insert: {
+          id?: string
+          last_updated?: string | null
+          token_data: Json
+        }
+        Update: {
+          id?: string
+          last_updated?: string | null
+          token_data?: Json
+        }
+        Relationships: []
+      }
       crawled_memecoins: {
         Row: {
           bundled_buys: number | null
@@ -91,6 +109,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trial_attempts: {
+        Row: {
+          created_at: string | null
+          id: string
+          ip_address: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ip_address: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ip_address?: string
+          wallet_address?: string
+        }
+        Relationships: []
       }
     }
     Views: {

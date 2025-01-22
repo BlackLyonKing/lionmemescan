@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Bitcoin, AlertTriangle } from "lucide-react";
-import TrendingTokensService from '@/services/TrendingTokensService';
+import { supabase } from "@/integrations/supabase/client";
 import { Memecoin } from '@/types/memecoin';
 import { getRiskColor, getRiskLabel } from '@/utils/riskCalculator';
 import {
@@ -18,20 +18,34 @@ interface TokenBannerProps {
 
 export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
   const [trendingTokens, setTrendingTokens] = useState<Memecoin[]>([]);
-  const [mostBoughtTokens, setMostBoughtTokens] = useState<Memecoin[]>([]);
   
   useEffect(() => {
-    const service = TrendingTokensService.getInstance();
-    setTrendingTokens(service.getTrendingTokens(hasAccess));
-    setMostBoughtTokens(service.getMostBoughtTokens(hasAccess));
+    const fetchTopTokens = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('fetch-top-tokens');
+        
+        if (error) throw error;
+        
+        setTrendingTokens(data.map((token: any) => ({
+          name: token.name,
+          symbol: token.symbol,
+          marketCap: token.liquidity * token.price,
+          socialScore: Math.floor(Math.random() * 100), // This would be replaced with real data
+          dexStatus: "paid",
+          meta: ["trending"],
+          bundledBuys: Math.floor(Math.random() * 50),
+          riskScore: Math.floor(Math.random() * 10) + 1,
+        })));
+      } catch (error) {
+        console.error('Error fetching top tokens:', error);
+      }
+    };
 
-    const interval = setInterval(() => {
-      setTrendingTokens(service.getTrendingTokens(hasAccess));
-      setMostBoughtTokens(service.getMostBoughtTokens(hasAccess));
-    }, 60000);
+    fetchTopTokens();
+    const interval = setInterval(fetchTopTokens, 3600000); // Fetch every hour
 
     return () => clearInterval(interval);
-  }, [hasAccess]);
+  }, []);
   
   return (
     <div className="w-full overflow-hidden mb-8">
