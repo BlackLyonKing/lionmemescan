@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Connection, PublicKey, Transaction as SolanaTransaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-const Transaction = () => {
+const TransactionPage = () => {
   const { tokenSymbol } = useParams();
   const { connected, publicKey, sendTransaction } = useWallet();
   const [amount, setAmount] = useState("");
@@ -41,7 +41,7 @@ const Transaction = () => {
       const platformFee = solAmount * (PLATFORM_FEE_PERCENTAGE / 100);
       const platformFeeInLamports = Math.floor(platformFee * LAMPORTS_PER_SOL);
 
-      const transaction = new Transaction();
+      const transaction = new SolanaTransaction();
       const platformWallet = new PublicKey("3EoyjLFyrMNfuf1FxvQ1Qvxmes7JmopWF4ehu3xp6hnG");
 
       transaction.add(
@@ -108,4 +108,4 @@ const Transaction = () => {
   );
 };
 
-export default Transaction;
+export default TransactionPage;
