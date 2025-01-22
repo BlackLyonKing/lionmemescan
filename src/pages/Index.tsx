@@ -8,7 +8,6 @@ import { BacktestingDashboard } from "@/components/BacktestingDashboard";
 import { Navigation } from "@/components/Navigation";
 import { MemecoinsTable } from "@/components/MemecoinsTable";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { TopTokensBanner } from "@/components/TopTokensBanner";
 
 const mockMemecoins = [
   {
@@ -47,7 +46,6 @@ const Index = () => {
           </p>
         </div>
 
-        <TopTokensBanner />
         <TokenBanner hasAccess={hasAccess || isAdmin} />
 
         {!hasAccess && !isAdmin ? (
