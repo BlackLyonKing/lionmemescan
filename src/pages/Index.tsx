@@ -1,4 +1,3 @@
-import { WalletButton } from "@/components/WalletButton";
 import { PaymentGate } from "@/components/PaymentGate";
 import { useState } from "react";
 import TrendingBanner from "@/components/TrendingBanner";
@@ -47,7 +46,7 @@ const Index = () => {
           </p>
         </div>
 
-        <TokenBanner hasAccess={hasAccess || isAdmin} />
+        {publicKey && <TokenBanner hasAccess={hasAccess || isAdmin} />}
 
         {!hasAccess && !isAdmin ? (
           <PaymentGate onPaymentSuccess={() => setHasAccess(true)} />
