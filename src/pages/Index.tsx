@@ -1,6 +1,6 @@
 import { WalletButton } from "@/components/WalletButton";
 import { PaymentGate } from "@/components/PaymentGate";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TrendingBanner from "@/components/TrendingBanner";
 import { UserProfile } from "@/components/UserProfile";
 import { TokenBanner } from "@/components/TokenBanner";
@@ -29,6 +29,13 @@ const Index = () => {
   const [hasAccess, setHasAccess] = useState(false);
   const { publicKey } = useWallet();
   const isAdmin = publicKey?.toBase58() === "4UGRoYBFRufAm7HVSSiQbwp9ETa9gFWzyQ4czwaeVAv3";
+
+  useEffect(() => {
+    console.log("Index component mounted");
+    return () => {
+      console.log("Index component unmounted");
+    };
+  }, []);
 
   console.log("Index page rendering", { hasAccess, isAdmin, publicKey: publicKey?.toBase58() });
 
