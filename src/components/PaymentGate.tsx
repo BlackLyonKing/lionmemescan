@@ -70,7 +70,7 @@ const PRICING_TIERS: PricingTier[] = [
 ];
 
 export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void }) => {
-  const { publicKey, sendTransaction } = useWallet();
+  const { publicKey, sendTransaction, signMessage } = useWallet();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasValidAccess, setHasValidAccess] = useState(false);
@@ -100,6 +100,23 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
     }
   };
 
+  const requestBalancePermission = async () => {
+    if (!publicKey || !signMessage) {
+      throw new Error("Wallet not connected");
+    }
+
+    try {
+      const message = new TextEncoder().encode(
+        `Allow Memecoin Scanner to check your wallet balance?\n\nThis permission is required to verify you have sufficient funds for the purchase.\n\nTimestamp: ${Date.now()}`
+      );
+      await signMessage(message);
+      return true;
+    } catch (error) {
+      console.error("Permission denied for balance check:", error);
+      return false;
+    }
+  };
+
   const handlePaymentConfirmation = async () => {
     if (!publicKey || !selectedTier) {
       toast({
@@ -114,10 +131,43 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       setIsProcessing(true);
       console.log("Processing payment for tier:", selectedTier.name);
 
-      const connection = new Connection(SOLANA_RPC_ENDPOINT, {
-        commitment: 'confirmed',
-        confirmTransactionInitialTimeout: 60000, // 60 second timeout
-      });
+      // Request permission to check balance
+      const hasPermission = await requestBalancePermission();
+      if (!hasPermission) {
+        throw new Error("Permission denied to check wallet balance");
+      }
+
+      // Initialize connection with fallback RPC endpoints
+      const rpcEndpoints = [
+        "https://api.mainnet-beta.solana.com",
+        "https://solana-mainnet.g.alchemy.com/v2/demo",
+        "https://rpc.ankr.com/solana"
+      ];
+
+      let connection: Connection | null = null;
+      let connectionError: Error | null = null;
+
+      // Try each RPC endpoint until one works
+      for (const endpoint of rpcEndpoints) {
+        try {
+          const tempConnection = new Connection(endpoint, {
+            commitment: 'confirmed',
+            confirmTransactionInitialTimeout: 60000,
+          });
+          // Test the connection
+          await tempConnection.getLatestBlockhash();
+          connection = tempConnection;
+          console.log("Successfully connected to RPC endpoint:", endpoint);
+          break;
+        } catch (error) {
+          console.error(`Failed to connect to ${endpoint}:`, error);
+          connectionError = error as Error;
+        }
+      }
+
+      if (!connection) {
+        throw new Error(`Failed to connect to any RPC endpoint: ${connectionError?.message}`);
+      }
       
       // Validate recipient address
       let recipientPubKey: PublicKey;
@@ -146,57 +196,70 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
         throw new Error("Unable to check wallet balance. Please try again or use a different wallet.");
       }
 
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: recipientPubKey,
-          lamports,
-        })
-      );
+      // Create and send transaction with retry logic
+      const maxRetries = 3;
+      let lastError: Error | null = null;
 
-      // Get the latest blockhash with retry logic
-      let blockhash;
-      try {
-        const { blockhash: latestBlockhash } = await connection.getLatestBlockhash('finalized');
-        blockhash = latestBlockhash;
-        console.log("Got blockhash:", blockhash);
-      } catch (error) {
-        console.error("Error getting blockhash:", error);
-        throw new Error("Network error. Please try again.");
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`Transaction attempt ${attempt}/${maxRetries}`);
+
+          const transaction = new Transaction().add(
+            SystemProgram.transfer({
+              fromPubkey: publicKey,
+              toPubkey: recipientPubKey,
+              lamports,
+            })
+          );
+
+          const { blockhash } = await connection.getLatestBlockhash('finalized');
+          transaction.recentBlockhash = blockhash;
+          transaction.feePayer = publicKey;
+
+          console.log("Sending transaction...");
+          const signature = await sendTransaction(transaction, connection);
+          console.log("Transaction sent:", signature);
+
+          const confirmation = await connection.confirmTransaction({
+            signature,
+            blockhash,
+            lastValidBlockHeight: await connection.getBlockHeight(),
+          });
+          
+          console.log("Transaction confirmed:", confirmation);
+
+          if (confirmation.value.err) {
+            throw new Error("Transaction failed to confirm");
+          }
+
+          // Transaction successful, break the retry loop
+          const paymentTime = Date.now();
+          localStorage.setItem(
+            `lastPayment_${publicKey.toString()}`,
+            JSON.stringify({ timestamp: paymentTime, duration: selectedTier.duration })
+          );
+          
+          toast({
+            title: "Payment Successful",
+            description: `You now have access to ${selectedTier.name} features!`,
+          });
+          
+          setHasValidAccess(true);
+          onPaymentSuccess();
+          break;
+
+        } catch (error) {
+          console.error(`Transaction attempt ${attempt} failed:`, error);
+          lastError = error as Error;
+          
+          if (attempt === maxRetries) {
+            throw new Error(`Transaction failed after ${maxRetries} attempts: ${lastError.message}`);
+          }
+          
+          // Wait before retrying
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
-
-      transaction.recentBlockhash = blockhash;
-      transaction.feePayer = publicKey;
-
-      console.log("Sending transaction...");
-      const signature = await sendTransaction(transaction, connection);
-      console.log("Transaction sent:", signature);
-
-      const confirmation = await connection.confirmTransaction({
-        signature,
-        blockhash,
-        lastValidBlockHeight: await connection.getBlockHeight(),
-      });
-      
-      console.log("Transaction confirmed:", confirmation);
-
-      if (confirmation.value.err) {
-        throw new Error("Transaction failed to confirm");
-      }
-
-      const paymentTime = Date.now();
-      localStorage.setItem(
-        `lastPayment_${publicKey.toString()}`,
-        JSON.stringify({ timestamp: paymentTime, duration: selectedTier.duration })
-      );
-      
-      toast({
-        title: "Payment Successful",
-        description: `You now have access to ${selectedTier.name} features!`,
-      });
-      
-      setHasValidAccess(true);
-      onPaymentSuccess();
 
     } catch (error) {
       console.error("Payment error:", error);
