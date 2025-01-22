@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Navigation } from "@/components/Navigation";
 import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-const TokenTransaction = () => {
+const Transaction = () => {
   const { tokenSymbol } = useParams();
   const { connected, publicKey, sendTransaction } = useWallet();
   const [amount, setAmount] = useState("");
@@ -108,4 +108,4 @@ const TokenTransaction = () => {
   );
 };
 
-export default TokenTransaction;
+export default Transaction;
