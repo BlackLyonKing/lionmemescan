@@ -17,7 +17,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   const { publicKey, signMessage } = useWallet();
   const { toast } = useToast();
   const [hasValidAccess, setHasValidAccess] = useState(false);
-  const [showTrialConfirmation, setShowTrialConfirmation] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
   const [selectedTier, setSelectedTier] = useState<'free' | 'basic' | 'kings'>('free');
   const { startTrial } = useTrialCountdown();
 
@@ -38,10 +38,10 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
         setHasValidAccess(true);
         onPaymentSuccess();
       } else {
-        setShowTrialConfirmation(true);
+        setShowDialog(true);
       }
     } else {
-      setShowTrialConfirmation(true);
+      setShowDialog(true);
     }
   };
 
@@ -55,8 +55,8 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       return;
     }
 
-    if (selectedTier === 'free') {
-      try {
+    try {
+      if (selectedTier === 'free') {
         // Request wallet signature to confirm trial
         const message = new TextEncoder().encode(
           `I confirm that I want to start my 40-hour Kings tier trial.\n\nTimestamp: ${Date.now()}`
@@ -95,11 +95,10 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
         if (insertError) throw insertError;
 
         startTrial();
-        const paymentTime = Date.now();
         localStorage.setItem(
           `lastPayment_${publicKey.toString()}`,
           JSON.stringify({ 
-            timestamp: paymentTime, 
+            timestamp: Date.now(), 
             duration: 40 * 60 * 60 * 1000 // 40 hours in milliseconds
           })
         );
@@ -111,95 +110,81 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
         
         setHasValidAccess(true);
         onPaymentSuccess();
-      } catch (error) {
-        console.error('Error starting trial:', error);
+      } else {
+        // Handle paid tiers (Basic and Kings)
         toast({
-          title: "Error",
-          description: "Could not start trial. Please try again.",
-          variant: "destructive",
+          title: "Payment Required",
+          description: `Please proceed with payment for the ${selectedTier} tier`,
         });
+        // Payment processing logic would go here
       }
-    } else {
-      // Handle paid tiers (Basic and Kings)
-      // Payment processing logic goes here
+    } catch (error) {
+      console.error('Error:', error);
       toast({
-        title: "Payment Required",
-        description: `You have selected the ${selectedTier} tier. Please proceed with the payment.`,
-        variant: "default",
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
       });
-      // Implement payment processing logic here
     }
     
-    setShowTrialConfirmation(false);
+    setShowDialog(false);
   };
 
-  if (hasValidAccess) {
-    return null;
-  }
+  if (hasValidAccess) return null;
 
   return (
-    <Dialog open={showTrialConfirmation} onOpenChange={setShowTrialConfirmation}>
+    <Dialog open={showDialog} onOpenChange={setShowDialog}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Choose Your Access Tier</DialogTitle>
-          <DialogDescription>
-            {selectedTier === 'free' ? (
-              <>
-                Welcome to Memecoin Scanner! You're about to start your free trial which includes:
-                <ul className="list-disc pl-6 mt-2 space-y-2">
-                  <li>40 hours of Kings tier access</li>
-                  <li>Advanced memecoin scanning</li>
-                  <li>Real-time social metrics</li>
-                  <li>AI-powered analysis</li>
-                  <li>Priority support</li>
-                </ul>
-                <p className="mt-4">
-                  By continuing, you acknowledge that your trial will expire after 40 hours of access.
-                </p>
-              </>
-            ) : (
-              <>
-                Select your preferred tier:
-                <div className="space-y-4 mt-4">
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={() => setSelectedTier('basic')}
-                  >
-                    Basic Tier - 0.1 SOL/month
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    onClick={() => setSelectedTier('kings')}
-                  >
-                    Kings Tier - 0.2 SOL/month
-                  </Button>
+          <DialogDescription className="space-y-4">
+            <div className="grid gap-4">
+              <Button 
+                variant="outline" 
+                className="w-full p-6 flex flex-col items-start space-y-2" 
+                onClick={() => setSelectedTier('free')}
+              >
+                <div className="font-bold">Free Trial</div>
+                <div className="text-sm text-muted-foreground text-left">
+                  • 40 hours of Kings tier access
+                  <br />• Full feature access
+                  <br />• No payment required
                 </div>
-              </>
-            )}
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="w-full p-6 flex flex-col items-start space-y-2" 
+                onClick={() => setSelectedTier('basic')}
+              >
+                <div className="font-bold">Basic Tier - 0.1 SOL/month</div>
+                <div className="text-sm text-muted-foreground text-left">
+                  • Basic memecoin scanning
+                  <br />• Standard metrics
+                  <br />• Email support
+                </div>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="w-full p-6 flex flex-col items-start space-y-2" 
+                onClick={() => setSelectedTier('kings')}
+              >
+                <div className="font-bold">Kings Tier - 0.2 SOL/month</div>
+                <div className="text-sm text-muted-foreground text-left">
+                  • Advanced memecoin scanning
+                  <br />• Real-time social metrics
+                  <br />• AI-powered analysis
+                  <br />• Priority support
+                </div>
+              </Button>
+            </div>
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="space-x-2">
-          {selectedTier === 'free' ? (
-            <>
-              <Button variant="outline" onClick={() => setSelectedTier('basic')}>
-                View Paid Plans
-              </Button>
-              <Button onClick={handleTrialConfirmation}>
-                Start Free Trial
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="outline" onClick={() => setSelectedTier('free')}>
-                Try Free Trial
-              </Button>
-              <Button onClick={handleTrialConfirmation}>
-                Continue to Payment
-              </Button>
-            </>
-          )}
+        <DialogFooter>
+          <Button onClick={handleTrialConfirmation}>
+            {selectedTier === 'free' ? 'Start Free Trial' : 'Continue to Payment'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

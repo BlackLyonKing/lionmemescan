@@ -120,7 +120,7 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
     try {
       console.log(`Initiating sale of ${coin.symbol}`);
       
-      const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+      const connection = await getConnection();
       
       // Calculate platform fee
       const platformFee = parseFloat(amount) * (PLATFORM_FEE_PERCENTAGE / 100);
