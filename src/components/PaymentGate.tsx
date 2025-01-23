@@ -18,6 +18,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   const { toast } = useToast();
   const [hasValidAccess, setHasValidAccess] = useState(false);
   const [showTrialConfirmation, setShowTrialConfirmation] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<'free' | 'basic' | 'kings'>('free');
   const { startTrial } = useTrialCountdown();
 
   useEffect(() => {
@@ -53,72 +54,83 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       });
       return;
     }
-    
-    try {
-      // Request wallet signature to confirm trial
-      const message = new TextEncoder().encode(
-        `I confirm that I want to start my 40-hour Kings tier trial.\n\nTimestamp: ${Date.now()}`
-      );
-      await signMessage(message);
 
-      // Check if user has already used trial
-      const { data: existingTrials, error: trialError } = await supabase
-        .from('trial_attempts')
-        .select('*')
-        .eq('wallet_address', publicKey.toString());
+    if (selectedTier === 'free') {
+      try {
+        // Request wallet signature to confirm trial
+        const message = new TextEncoder().encode(
+          `I confirm that I want to start my 40-hour Kings tier trial.\n\nTimestamp: ${Date.now()}`
+        );
+        await signMessage(message);
 
-      if (trialError) throw trialError;
+        // Check if user has already used trial
+        const { data: existingTrials, error: trialError } = await supabase
+          .from('trial_attempts')
+          .select('*')
+          .eq('wallet_address', publicKey.toString());
 
-      if (existingTrials && existingTrials.length > 0) {
+        if (trialError) throw trialError;
+
+        if (existingTrials && existingTrials.length > 0) {
+          toast({
+            title: "Trial Not Available",
+            description: "You have already used your free trial",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Record the trial attempt
+        const { error: insertError } = await supabase
+          .from('trial_attempts')
+          .insert([
+            { 
+              wallet_address: publicKey.toString(),
+              ip_address: await fetch('https://api.ipify.org?format=json')
+                .then(res => res.json())
+                .then(data => data.ip)
+            }
+          ]);
+
+        if (insertError) throw insertError;
+
+        startTrial();
+        const paymentTime = Date.now();
+        localStorage.setItem(
+          `lastPayment_${publicKey.toString()}`,
+          JSON.stringify({ 
+            timestamp: paymentTime, 
+            duration: 40 * 60 * 60 * 1000 // 40 hours in milliseconds
+          })
+        );
+        
         toast({
-          title: "Trial Not Available",
-          description: "You have already used your free trial",
+          title: "Trial Activated",
+          description: "Your 40-hour Kings tier trial has been activated!",
+        });
+        
+        setHasValidAccess(true);
+        onPaymentSuccess();
+      } catch (error) {
+        console.error('Error starting trial:', error);
+        toast({
+          title: "Error",
+          description: "Could not start trial. Please try again.",
           variant: "destructive",
         });
-        return;
       }
-
-      // Record the trial attempt
-      const { error: insertError } = await supabase
-        .from('trial_attempts')
-        .insert([
-          { 
-            wallet_address: publicKey.toString(),
-            ip_address: await fetch('https://api.ipify.org?format=json')
-              .then(res => res.json())
-              .then(data => data.ip)
-          }
-        ]);
-
-      if (insertError) throw insertError;
-
-      startTrial();
-      const paymentTime = Date.now();
-      localStorage.setItem(
-        `lastPayment_${publicKey.toString()}`,
-        JSON.stringify({ 
-          timestamp: paymentTime, 
-          duration: 40 * 60 * 60 * 1000 // 40 hours in milliseconds
-        })
-      );
-      
+    } else {
+      // Handle paid tiers (Basic and Kings)
+      // Payment processing logic goes here
       toast({
-        title: "Trial Activated",
-        description: "Your 40-hour Kings tier trial has been activated!",
+        title: "Payment Required",
+        description: `You have selected the ${selectedTier} tier. Please proceed with the payment.`,
+        variant: "default",
       });
-      
-      setHasValidAccess(true);
-      onPaymentSuccess();
-    } catch (error) {
-      console.error('Error starting trial:', error);
-      toast({
-        title: "Error",
-        description: "Could not start trial. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setShowTrialConfirmation(false);
+      // Implement payment processing logic here
     }
+    
+    setShowTrialConfirmation(false);
   };
 
   if (hasValidAccess) {
@@ -129,28 +141,65 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
     <Dialog open={showTrialConfirmation} onOpenChange={setShowTrialConfirmation}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Start Your Free Trial</DialogTitle>
+          <DialogTitle>Choose Your Access Tier</DialogTitle>
           <DialogDescription>
-            Welcome to Memecoin Scanner! You're about to start your free trial which includes:
-            <ul className="list-disc pl-6 mt-2 space-y-2">
-              <li>40 hours of Kings tier access</li>
-              <li>Advanced memecoin scanning</li>
-              <li>Real-time social metrics</li>
-              <li>AI-powered analysis</li>
-              <li>Priority support</li>
-            </ul>
-            <p className="mt-4">
-              By continuing, you acknowledge that your trial will expire after 40 hours of access.
-            </p>
+            {selectedTier === 'free' ? (
+              <>
+                Welcome to Memecoin Scanner! You're about to start your free trial which includes:
+                <ul className="list-disc pl-6 mt-2 space-y-2">
+                  <li>40 hours of Kings tier access</li>
+                  <li>Advanced memecoin scanning</li>
+                  <li>Real-time social metrics</li>
+                  <li>AI-powered analysis</li>
+                  <li>Priority support</li>
+                </ul>
+                <p className="mt-4">
+                  By continuing, you acknowledge that your trial will expire after 40 hours of access.
+                </p>
+              </>
+            ) : (
+              <>
+                Select your preferred tier:
+                <div className="space-y-4 mt-4">
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => setSelectedTier('basic')}
+                  >
+                    Basic Tier - 0.1 SOL/month
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => setSelectedTier('kings')}
+                  >
+                    Kings Tier - 0.2 SOL/month
+                  </Button>
+                </div>
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setShowTrialConfirmation(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleTrialConfirmation}>
-            Start Free Trial
-          </Button>
+        <DialogFooter className="space-x-2">
+          {selectedTier === 'free' ? (
+            <>
+              <Button variant="outline" onClick={() => setSelectedTier('basic')}>
+                View Paid Plans
+              </Button>
+              <Button onClick={handleTrialConfirmation}>
+                Start Free Trial
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => setSelectedTier('free')}>
+                Try Free Trial
+              </Button>
+              <Button onClick={handleTrialConfirmation}>
+                Continue to Payment
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
