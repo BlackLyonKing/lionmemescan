@@ -8,13 +8,14 @@ import { Button } from "@/components/ui/button";
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useToast } from "@/hooks/use-toast";
 import { getRiskColor, getRiskLabel, calculateRiskScore, getRiskDescription } from '@/utils/riskCalculator';
+import { getConnection } from '@/utils/rpcConfig';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { AIInsights } from './AIInsights';
 
 interface MemecoinsTableRowProps {
@@ -26,7 +27,7 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
   const { connected, publicKey, sendTransaction } = useWallet();
   const { toast } = useToast();
   const MIN_SOL_AMOUNT = 0.02;
-  const PLATFORM_FEE_PERCENTAGE = 0.5; // 0.5%
+  const PLATFORM_FEE_PERCENTAGE = 0.5;
   const PLATFORM_WALLET_ADDRESS = "3EoyjLFyrMNfuf1FxvQ1Qvxmes7JmopWF4ehu3xp6hnG";
 
   const handleBuy = async () => {
@@ -35,7 +36,6 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
         title: "Wallet not connected",
         description: "Please connect your wallet to make a purchase",
         variant: "destructive",
-        className: "bg-gradient-to-r from-purple-600 to-pink-600 text-white",
       });
       return;
     }
@@ -46,7 +46,6 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
         title: "Invalid amount",
         description: `Minimum purchase amount is ${MIN_SOL_AMOUNT} SOL`,
         variant: "destructive",
-        className: "bg-gradient-to-r from-purple-600 to-pink-600 text-white",
       });
       return;
     }
@@ -54,7 +53,7 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
     try {
       console.log(`Initiating purchase of ${coin.symbol} for ${amount} SOL`);
       
-      const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+      const connection = await getConnection();
       
       // Calculate platform fee
       const platformFee = solAmount * (PLATFORM_FEE_PERCENTAGE / 100);
@@ -72,17 +71,26 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
           lamports: platformFeeInLamports,
         })
       );
-      
-      // Add token purchase instruction (this would need to be implemented based on your DEX integration)
-      // For now, we'll just log the attempt
-      console.log(`Platform fee: ${platformFee} SOL`);
-      console.log(`Amount after fee: ${solAmount - platformFee} SOL`);
 
+      const { blockhash } = await connection.getLatestBlockhash('finalized');
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+      
+      console.log("Sending transaction with platform fee:", platformFee, "SOL");
       const signature = await sendTransaction(transaction, connection);
       console.log("Transaction sent:", signature);
 
-      const confirmation = await connection.confirmTransaction(signature, "confirmed");
-      console.log("Transaction confirmed:", confirmation);
+      const confirmation = await connection.confirmTransaction({
+        signature,
+        blockhash,
+        lastValidBlockHeight: await connection.getBlockHeight(),
+      });
+      
+      console.log("Transaction confirmation:", confirmation);
+
+      if (confirmation.value.err) {
+        throw new Error(`Transaction failed: ${confirmation.value.err}`);
+      }
 
       toast({
         title: "Purchase initiated",
@@ -95,7 +103,6 @@ export const MemecoinsTableRow = ({ coin }: MemecoinsTableRowProps) => {
         title: "Purchase failed",
         description: "There was an error processing your purchase",
         variant: "destructive",
-        className: "bg-gradient-to-r from-purple-600 to-pink-600 text-white",
       });
     }
   };

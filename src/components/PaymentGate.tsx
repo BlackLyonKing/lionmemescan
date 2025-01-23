@@ -15,6 +15,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { getConnection } from '@/utils/rpcConfig';
 
 const RECIPIENT_ADDRESS = "3EoyjLFyrMNfuf1FxvQ1Qvxmes7JmopWF4ehu3xp6hnG";
 const ACCESS_DURATION = {
@@ -130,47 +131,13 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       setIsProcessing(true);
       console.log("Processing payment for tier:", selectedTier.name);
 
-      // Request permission to check balance
       const hasPermission = await requestBalancePermission();
       if (!hasPermission) {
         throw new Error("Permission denied to check wallet balance");
       }
 
-      // Initialize connection with fallback RPC endpoints
-      const rpcEndpoints = [
-        "https://api.mainnet-beta.solana.com",
-        "https://solana-api.projectserum.com",
-        "https://rpc.ankr.com/solana",
-        "https://solana.public-rpc.com"
-      ];
-
-      let connection: Connection | null = null;
-      let blockHash: string | null = null;
-
-      // Try each RPC endpoint until one works
-      for (const endpoint of rpcEndpoints) {
-        try {
-          console.log("Attempting to connect to RPC endpoint:", endpoint);
-          const tempConnection = new Connection(endpoint, {
-            commitment: 'confirmed',
-            confirmTransactionInitialTimeout: 60000,
-          });
-
-          // Test the connection by getting the latest blockhash
-          const { blockhash } = await tempConnection.getLatestBlockhash('finalized');
-          blockHash = blockhash;
-          connection = tempConnection;
-          console.log("Successfully connected to RPC endpoint:", endpoint);
-          break;
-        } catch (error) {
-          console.error(`Failed to connect to ${endpoint}:`, error);
-          continue;
-        }
-      }
-
-      if (!connection || !blockHash) {
-        throw new Error("Failed to connect to any RPC endpoint");
-      }
+      const connection = await getConnection();
+      console.log("Connected to RPC endpoint");
 
       // Validate recipient address
       let recipientPubKey: PublicKey;
@@ -187,7 +154,6 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       console.log("Payment amount in lamports:", lamports);
 
       try {
-        // Check if user has enough balance
         const balance = await connection.getBalance(publicKey);
         console.log("User balance:", balance / LAMPORTS_PER_SOL, "SOL");
         
@@ -199,69 +165,49 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
         throw new Error("Unable to check wallet balance. Please try again.");
       }
 
-      // Create and send transaction with retry logic
-      const maxRetries = 3;
-      let lastError: Error | null = null;
+      const { blockhash } = await connection.getLatestBlockhash('finalized');
+      console.log("Got latest blockhash:", blockhash);
 
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          console.log(`Transaction attempt ${attempt}/${maxRetries}`);
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: recipientPubKey,
+          lamports,
+        })
+      );
 
-          const transaction = new Transaction().add(
-            SystemProgram.transfer({
-              fromPubkey: publicKey,
-              toPubkey: recipientPubKey,
-              lamports,
-            })
-          );
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
 
-          transaction.recentBlockhash = blockHash;
-          transaction.feePayer = publicKey;
+      console.log("Sending transaction...");
+      const signature = await sendTransaction(transaction, connection);
+      console.log("Transaction sent:", signature);
 
-          console.log("Sending transaction...");
-          const signature = await sendTransaction(transaction, connection);
-          console.log("Transaction sent:", signature);
+      const confirmation = await connection.confirmTransaction({
+        signature,
+        blockhash,
+        lastValidBlockHeight: await connection.getBlockHeight(),
+      });
+      
+      console.log("Transaction confirmation:", confirmation);
 
-          const confirmation = await connection.confirmTransaction({
-            signature,
-            blockhash: blockHash,
-            lastValidBlockHeight: await connection.getBlockHeight(),
-          });
-          
-          console.log("Transaction confirmation:", confirmation);
-
-          if (confirmation.value.err) {
-            throw new Error(`Transaction failed to confirm: ${confirmation.value.err}`);
-          }
-
-          // Transaction successful, break the retry loop
-          const paymentTime = Date.now();
-          localStorage.setItem(
-            `lastPayment_${publicKey.toString()}`,
-            JSON.stringify({ timestamp: paymentTime, duration: selectedTier.duration })
-          );
-          
-          toast({
-            title: "Payment Successful",
-            description: `You now have access to ${selectedTier.name} features!`,
-          });
-          
-          setHasValidAccess(true);
-          onPaymentSuccess();
-          return;
-
-        } catch (error) {
-          console.error(`Transaction attempt ${attempt} failed:`, error);
-          lastError = error as Error;
-          
-          if (attempt === maxRetries) {
-            throw new Error(`Transaction failed after ${maxRetries} attempts: ${lastError.message}`);
-          }
-          
-          // Wait before retrying
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
+      if (confirmation.value.err) {
+        throw new Error(`Transaction failed: ${confirmation.value.err}`);
       }
+
+      const paymentTime = Date.now();
+      localStorage.setItem(
+        `lastPayment_${publicKey.toString()}`,
+        JSON.stringify({ timestamp: paymentTime, duration: selectedTier.duration })
+      );
+      
+      toast({
+        title: "Payment Successful",
+        description: `You now have access to ${selectedTier.name} features!`,
+      });
+      
+      setHasValidAccess(true);
+      onPaymentSuccess();
 
     } catch (error) {
       console.error("Payment error:", error);
