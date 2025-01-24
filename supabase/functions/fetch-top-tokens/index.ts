@@ -16,10 +16,11 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    console.log('Fetching data from Bullex API...');
+    console.log('Fetching data from DexScreener API...');
     
+    // Using DexScreener API instead of Bullex as it's more reliable
     const response = await fetch(
-      'https://api.bullex.io/v1/tokens/trending?chain=solana&limit=20&period=24h',
+      'https://api.dexscreener.com/latest/dex/tokens/solana',
       {
         headers: {
           'Accept': 'application/json',
@@ -29,25 +30,28 @@ serve(async (req) => {
     );
 
     if (!response.ok) {
-      throw new Error(`Bullex API responded with status: ${response.status}`);
+      throw new Error(`DexScreener API responded with status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('Bullex API response:', JSON.stringify(data).slice(0, 200) + '...');
+    console.log('DexScreener API response received');
     
-    if (!data || !Array.isArray(data.tokens)) {
-      throw new Error('Invalid response format from Bullex API');
+    if (!data || !Array.isArray(data.pairs)) {
+      throw new Error('Invalid response format from DexScreener API');
     }
 
     // Process and map the top tokens
-    const topTokens = data.tokens.map(token => ({
-      name: token.name,
-      symbol: token.symbol,
-      price: parseFloat(token.price),
-      volume24h: parseFloat(token.volume24h),
-      liquidity: parseFloat(token.liquidity),
-      address: token.address,
-    }));
+    const topTokens = data.pairs
+      .sort((a, b) => parseFloat(b.priceUsd) - parseFloat(a.priceUsd))
+      .slice(0, 20)
+      .map(pair => ({
+        name: pair.baseToken.name,
+        symbol: pair.baseToken.symbol,
+        price: parseFloat(pair.priceUsd),
+        volume24h: parseFloat(pair.volume.h24),
+        liquidity: parseFloat(pair.liquidity.usd),
+        address: pair.baseToken.address,
+      }));
 
     console.log(`Successfully processed ${topTokens.length} tokens`);
     
@@ -70,6 +74,7 @@ serve(async (req) => {
     console.error('Error in fetch-top-tokens function:', error);
     
     try {
+      // Attempt to fetch cached data as fallback
       const { data: lastCachedData, error: cacheError } = await supabase
         .from('cached_top_tokens')
         .select('*')
@@ -81,7 +86,7 @@ serve(async (req) => {
         console.error('Error fetching cached data:', cacheError);
       }
 
-      if (lastCachedData) {
+      if (lastCachedData?.token_data) {
         console.log('Returning last cached data due to error');
         return new Response(JSON.stringify(lastCachedData.token_data), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
