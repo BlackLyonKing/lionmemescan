@@ -1,12 +1,12 @@
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
-import { Menu } from "lucide-react";
+import { Menu, Moon, Sun } from "lucide-react";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { SolanaPrice } from "./SolanaPrice";
 import { WalletButton } from "./WalletButton";
 import { useTrialCountdown } from "@/hooks/useTrialCountdown";
 import { Input } from "./ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "./ui/use-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -15,9 +15,22 @@ export const Navigation = () => {
   const [voucherCode, setVoucherCode] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [theme, setTheme] = useState<'light' | 'dark'>(
+    localStorage.getItem('theme') as 'light' | 'dark' || 'light'
+  );
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('light', 'dark');
+    root.classList.add(theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
 
   const handleVoucherSubmit = () => {
-    // This would typically validate with an API
     console.log("Submitting voucher code:", voucherCode);
     toast({
       title: "Voucher Code Submitted",
@@ -58,15 +71,35 @@ export const Navigation = () => {
                   </NavigationMenuList>
                 </NavigationMenu>
                 
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Voucher Code</h3>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter code"
-                      value={voucherCode}
-                      onChange={(e) => setVoucherCode(e.target.value)}
-                    />
-                    <Button onClick={handleVoucherSubmit}>Apply</Button>
+                <div className="space-y-4">
+                  <Button 
+                    onClick={toggleTheme} 
+                    variant="outline" 
+                    className="w-full justify-start"
+                  >
+                    {theme === 'dark' ? (
+                      <>
+                        <Sun className="h-4 w-4 mr-2" />
+                        Light Mode
+                      </>
+                    ) : (
+                      <>
+                        <Moon className="h-4 w-4 mr-2" />
+                        Dark Mode
+                      </>
+                    )}
+                  </Button>
+
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-medium">Voucher Code</h3>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter code"
+                        value={voucherCode}
+                        onChange={(e) => setVoucherCode(e.target.value)}
+                      />
+                      <Button onClick={handleVoucherSubmit}>Apply</Button>
+                    </div>
                   </div>
                 </div>
               </div>
