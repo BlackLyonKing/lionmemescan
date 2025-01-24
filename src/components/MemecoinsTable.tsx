@@ -9,6 +9,7 @@ import { MemecoinsTableHeader } from './TableHeader';
 import { MemecoinsTableRow } from './TableRow';
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSolanaPrice } from "@/hooks/useSolanaPrice";
 
 interface MemecoinsTableProps {
   coins: Memecoin[];
@@ -54,6 +55,9 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
     !coin.creatorRisk?.previousScams
   );
 
+  const { data: solanaPrice } = useSolanaPrice();
+  const kingsPrice = solanaPrice ? (100 / solanaPrice).toFixed(2) : 0.2;
+
   const filteredCoins = isBasicTier ? safeCoins : safeCoins.filter(coin => {
     const nameMatch = coin.name.toLowerCase().includes(filters.name.toLowerCase()) ||
                      coin.symbol.toLowerCase().includes(filters.name.toLowerCase());
@@ -84,7 +88,7 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-20">
       {!isBasicTier && <TableFilters filters={filters} setFilters={setFilters} />}
       
       <div className="glass-card p-4">
@@ -96,6 +100,20 @@ export const MemecoinsTable = ({ coins }: MemecoinsTableProps) => {
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-sm border-t p-4">
+        <div className="container mx-auto flex justify-between items-center">
+          <a 
+            href="/terms" 
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Terms & Use
+          </a>
+          <span className="text-sm text-muted-foreground">
+            Kings Tier: {kingsPrice} SOL (≈ $100)
+          </span>
+        </div>
       </div>
     </div>
   );

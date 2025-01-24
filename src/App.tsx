@@ -16,6 +16,7 @@ import Alerts from "./pages/Alerts";
 import Portfolio from "./pages/Portfolio";
 import Profile from "./pages/Profile";
 import Scan from "./pages/Scan";
+import Terms from "./pages/Terms";
 import Transaction from "./pages/Transaction";
 
 const endpoint = clusterApiUrl("devnet");
@@ -53,6 +54,7 @@ const App = () => (
                 <Route path="/portfolio" element={<Portfolio />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/scan" element={<Scan />} />
+                <Route path="/terms" element={<Terms />} />
                 <Route path="/transaction/:tokenSymbol" element={<Transaction />} />
               </Routes>
               <Toaster />
