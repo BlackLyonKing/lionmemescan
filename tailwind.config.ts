@@ -53,8 +53,8 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         crypto: {
-          purple: "#B026FF",
-          cyan: "#00FFFF",
+          purple: "#8B5CF6",
+          cyan: "#0EA5E9",
         },
       },
       borderRadius: {
