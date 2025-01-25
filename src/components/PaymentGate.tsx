@@ -32,6 +32,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   const [hasValidAccess, setHasValidAccess] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [selectedTier, setSelectedTier] = useState<'free' | 'basic' | 'kings'>('free');
+  const [showTerms, setShowTerms] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { startTrial } = useTrialCountdown();
 
@@ -41,6 +42,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
 
   const checkAccess = async () => {
     if (!publicKey) return;
+    console.log("Checking access for wallet:", publicKey.toString());
 
     const lastPaymentData = localStorage.getItem(`lastPayment_${publicKey.toString()}`);
     if (lastPaymentData) {
@@ -49,14 +51,22 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       const isValid = currentTime - timestamp < duration;
       
       if (isValid) {
+        console.log("Valid access found, granting access");
         setHasValidAccess(true);
         onPaymentSuccess();
       } else {
+        console.log("No valid access found, showing dialog");
         setShowDialog(true);
       }
     } else {
+      console.log("No payment data found, showing dialog");
       setShowDialog(true);
     }
+  };
+
+  const handleTierSelection = (tier: 'free' | 'basic' | 'kings') => {
+    setSelectedTier(tier);
+    setShowTerms(true);
   };
 
   const handleTrialConfirmation = async () => {
@@ -79,14 +89,13 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
     }
 
     try {
+      console.log("Starting trial confirmation process");
       if (selectedTier === 'free') {
-        // Request wallet signature to confirm trial and accept terms
         const message = new TextEncoder().encode(
           `I confirm that I want to start my 40-hour Kings tier trial and I accept the Terms and Conditions.\n\nTerms Version: 1.0\nTimestamp: ${Date.now()}`
         );
         await signMessage(message);
 
-        // Check if user has already used trial
         const { data: existingTrials, error: trialError } = await supabase
           .from('trial_attempts')
           .select('*')
@@ -103,7 +112,6 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
           return;
         }
 
-        // Record the trial attempt
         const { error: insertError } = await supabase
           .from('trial_attempts')
           .insert([
@@ -126,6 +134,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
           })
         );
         
+        console.log("Trial activated successfully");
         setHasValidAccess(true);
         onPaymentSuccess();
         setShowDialog(false);
@@ -135,12 +144,10 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
           description: "Your 40-hour Kings tier trial has been activated!",
         });
       } else {
-        // Handle paid tiers (Basic and Kings)
         toast({
           title: "Payment Required",
           description: `Please proceed with payment for the ${selectedTier} tier`,
         });
-        // Payment processing logic would go here
       }
     } catch (error) {
       console.error('Error:', error);
@@ -160,83 +167,96 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold mb-4">Choose Your Access Tier</DialogTitle>
           <DialogDescription className="space-y-6">
-            <div className="grid gap-6">
-              <Button 
-                variant="outline" 
-                className={`w-full p-6 flex flex-col items-start space-y-3 ${
-                  selectedTier === 'free' ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => setSelectedTier('free')}
-              >
-                <div className="font-bold text-lg">Free Trial</div>
-                <div className="text-sm text-muted-foreground text-left space-y-1">
-                  <p>• 40 hours of Kings tier access</p>
-                  <p>• Full feature access</p>
-                  <p>• No payment required</p>
-                </div>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className={`w-full p-6 flex flex-col items-start space-y-3 ${
-                  selectedTier === 'basic' ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => setSelectedTier('basic')}
-              >
-                <div className="font-bold text-lg">Basic Tier - 0.1 SOL/month</div>
-                <div className="text-sm text-muted-foreground text-left space-y-1">
-                  <p>• Basic memecoin scanning</p>
-                  <p>• Standard metrics</p>
-                  <p>• Email support</p>
-                </div>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className={`w-full p-6 flex flex-col items-start space-y-3 ${
-                  selectedTier === 'kings' ? 'ring-2 ring-primary' : ''
-                }`}
-                onClick={() => setSelectedTier('kings')}
-              >
-                <div className="font-bold text-lg">Kings Tier - 0.2 SOL/month</div>
-                <div className="text-sm text-muted-foreground text-left space-y-1">
-                  <p>• Advanced memecoin scanning</p>
-                  <p>• Real-time social metrics</p>
-                  <p>• AI-powered analysis</p>
-                  <p>• Priority support</p>
-                </div>
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="rounded-lg bg-muted p-6">
-                <pre className="text-sm whitespace-pre-wrap leading-relaxed">{TERMS_AND_CONDITIONS}</pre>
-              </div>
-              
-              <div className="flex items-center space-x-3">
-                <Checkbox
-                  id="terms"
-                  checked={acceptedTerms}
-                  onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
-                />
-                <label
-                  htmlFor="terms"
-                  className="text-sm font-medium leading-none cursor-pointer"
+            {!showTerms ? (
+              <div className="grid gap-6">
+                <Button 
+                  variant="outline" 
+                  className={`w-full p-6 flex flex-col items-start space-y-3 ${
+                    selectedTier === 'free' ? 'ring-2 ring-primary' : ''
+                  }`}
+                  onClick={() => handleTierSelection('free')}
                 >
-                  I accept the terms and conditions
-                </label>
+                  <div className="font-bold text-lg">Free Trial</div>
+                  <div className="text-sm text-muted-foreground text-left space-y-1">
+                    <p>• 40 hours of Kings tier access</p>
+                    <p>• Full feature access</p>
+                    <p>• No payment required</p>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className={`w-full p-6 flex flex-col items-start space-y-3 ${
+                    selectedTier === 'basic' ? 'ring-2 ring-primary' : ''
+                  }`}
+                  onClick={() => handleTierSelection('basic')}
+                >
+                  <div className="font-bold text-lg">Basic Tier - 0.1 SOL/month</div>
+                  <div className="text-sm text-muted-foreground text-left space-y-1">
+                    <p>• Basic memecoin scanning</p>
+                    <p>• Standard metrics</p>
+                    <p>• Email support</p>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className={`w-full p-6 flex flex-col items-start space-y-3 ${
+                    selectedTier === 'kings' ? 'ring-2 ring-primary' : ''
+                  }`}
+                  onClick={() => handleTierSelection('kings')}
+                >
+                  <div className="font-bold text-lg">Kings Tier - 0.2 SOL/month</div>
+                  <div className="text-sm text-muted-foreground text-left space-y-1">
+                    <p>• Advanced memecoin scanning</p>
+                    <p>• Real-time social metrics</p>
+                    <p>• AI-powered analysis</p>
+                    <p>• Priority support</p>
+                  </div>
+                </Button>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-lg bg-muted p-6">
+                  <pre className="text-sm whitespace-pre-wrap leading-relaxed">{TERMS_AND_CONDITIONS}</pre>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="terms"
+                    checked={acceptedTerms}
+                    onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                  />
+                  <label
+                    htmlFor="terms"
+                    className="text-sm font-medium leading-none cursor-pointer"
+                  >
+                    I accept the terms and conditions
+                  </label>
+                </div>
+              </div>
+            )}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="mt-6">
-          <Button 
-            onClick={handleTrialConfirmation}
-            disabled={selectedTier === 'free' && !acceptedTerms}
-            className="w-full sm:w-auto"
-          >
-            {selectedTier === 'free' ? 'Start Free Trial' : 'Continue to Payment'}
-          </Button>
+          {showTerms ? (
+            <div className="flex w-full gap-4">
+              <Button 
+                variant="outline"
+                onClick={() => setShowTerms(false)}
+                className="flex-1"
+              >
+                Back
+              </Button>
+              <Button 
+                onClick={handleTrialConfirmation}
+                disabled={!acceptedTerms}
+                className="flex-1"
+              >
+                {selectedTier === 'free' ? 'Start Free Trial' : 'Continue to Payment'}
+              </Button>
+            </div>
+          ) : null}
         </DialogFooter>
       </DialogContent>
     </Dialog>
