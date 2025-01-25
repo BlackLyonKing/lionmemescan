@@ -1,5 +1,6 @@
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { TokenAccountsFilter } from "@solana/web3.js";
+import { supabase } from "@/integrations/supabase/client";
 
 const USDC_MINT = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
 const USDT_MINT = new PublicKey("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB");
@@ -81,7 +82,7 @@ export const checkWalletBalance = async (
 export const hasValidSubscription = async (walletAddress: string): Promise<boolean> => {
   const { data, error } = await supabase
     .from('subscriptions')
-    .select('*')
+    .select()
     .eq('wallet_address', walletAddress)
     .gte('valid_until', new Date().toISOString())
     .single();

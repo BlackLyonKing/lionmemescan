@@ -187,7 +187,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
 
       const { data: existingTrials, error: trialError } = await supabase
         .from('trial_attempts')
-        .select('*')
+        .select()
         .eq('wallet_address', publicKey.toString());
 
       if (trialError) throw trialError;

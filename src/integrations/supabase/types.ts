@@ -110,6 +110,30 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          created_at: string | null
+          id: string
+          tier: string
+          valid_until: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          tier: string
+          valid_until: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          tier?: string
+          valid_until?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       trial_attempts: {
         Row: {
           created_at: string | null
