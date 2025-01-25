@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 const USDC_MINT = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
 const USDT_MINT = new PublicKey("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB");
-const TREASURY_WALLET = new PublicKey("YOUR_TREASURY_WALLET_ADDRESS"); // Replace with actual treasury wallet
+// Using a valid Solana address for testing - replace with your actual treasury wallet
+const TREASURY_WALLET = new PublicKey("DRpbCBMxVnDK7maPGv9FS1jHrxQF7A8w8MNqNymhWQGX");
 
 export const getTokenBalance = async (
   connection: Connection,
