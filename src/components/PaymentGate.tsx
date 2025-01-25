@@ -3,6 +3,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useTrialCountdown } from "@/hooks/useTrialCountdown";
 import { supabase } from "@/integrations/supabase/client";
+import { checkWalletBalance, hasValidSubscription } from "@/utils/walletUtils";
+import { useSolanaPrice } from "@/hooks/useSolanaPrice";
+import { Connection, clusterApiUrl, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +30,7 @@ By accepting these terms, you acknowledge and agree to the following:
 `;
 
 export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void }) => {
-  const { publicKey, signMessage } = useWallet();
+  const { publicKey, signMessage, signTransaction } = useWallet();
   const { toast } = useToast();
   const [hasValidAccess, setHasValidAccess] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
@@ -35,6 +38,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   const [showTerms, setShowTerms] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { startTrial } = useTrialCountdown();
+  const { data: solPrice } = useSolanaPrice();
 
   useEffect(() => {
     checkAccess();
@@ -43,6 +47,14 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   const checkAccess = async () => {
     if (!publicKey) return;
     console.log("Checking access for wallet:", publicKey.toString());
+
+    const hasSubscription = await hasValidSubscription(publicKey.toString());
+    if (hasSubscription) {
+      console.log("Valid subscription found");
+      setHasValidAccess(true);
+      onPaymentSuccess();
+      return;
+    }
 
     const lastPaymentData = localStorage.getItem(`lastPayment_${publicKey.toString()}`);
     if (lastPaymentData) {
@@ -69,6 +81,84 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
     setShowTerms(true);
   };
 
+  const handlePayment = async () => {
+    if (!publicKey || !signTransaction || !solPrice) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet and try again",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const connection = new Connection(clusterApiUrl("mainnet-beta"));
+    const requiredAmount = selectedTier === 'basic' ? 25 : 100;
+    
+    const hasBalance = await checkWalletBalance(
+      connection,
+      publicKey,
+      requiredAmount,
+      solPrice
+    );
+
+    if (!hasBalance) {
+      toast({
+        title: "Insufficient Balance",
+        description: `Please ensure you have ${requiredAmount} USD worth of SOL, USDC, or USDT in your wallet`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const solAmount = requiredAmount / solPrice;
+      const transaction = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: new PublicKey("YOUR_TREASURY_WALLET"), // Replace with actual treasury wallet
+          lamports: Math.floor(solAmount * LAMPORTS_PER_SOL),
+        })
+      );
+
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      const signedTransaction = await signTransaction(transaction);
+      const txid = await connection.sendRawTransaction(signedTransaction.serialize());
+      await connection.confirmTransaction(txid);
+
+      // Store subscription in database
+      const { error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .insert([
+          {
+            wallet_address: publicKey.toString(),
+            tier: selectedTier,
+            valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          }
+        ]);
+
+      if (subscriptionError) throw subscriptionError;
+
+      setHasValidAccess(true);
+      onPaymentSuccess();
+      setShowDialog(false);
+
+      toast({
+        title: "Payment Successful",
+        description: `Your ${selectedTier} tier subscription is now active`,
+      });
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: "Payment Failed",
+        description: "An error occurred during payment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleTrialConfirmation = async () => {
     if (!publicKey || !signMessage) {
       toast({
@@ -90,65 +180,56 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
 
     try {
       console.log("Starting trial confirmation process");
-      if (selectedTier === 'free') {
-        const message = new TextEncoder().encode(
-          `I confirm that I want to start my 40-hour Kings tier trial and I accept the Terms and Conditions.\n\nTerms Version: 1.0\nTimestamp: ${Date.now()}`
-        );
-        await signMessage(message);
+      const message = new TextEncoder().encode(
+        `I confirm that I want to start my 40-hour Kings tier trial and I accept the Terms and Conditions.\n\nTerms Version: 1.0\nTimestamp: ${Date.now()}`
+      );
+      await signMessage(message);
 
-        const { data: existingTrials, error: trialError } = await supabase
-          .from('trial_attempts')
-          .select('*')
-          .eq('wallet_address', publicKey.toString());
+      const { data: existingTrials, error: trialError } = await supabase
+        .from('trial_attempts')
+        .select('*')
+        .eq('wallet_address', publicKey.toString());
 
-        if (trialError) throw trialError;
+      if (trialError) throw trialError;
 
-        if (existingTrials && existingTrials.length > 0) {
-          toast({
-            title: "Trial Not Available",
-            description: "You have already used your free trial",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        const { error: insertError } = await supabase
-          .from('trial_attempts')
-          .insert([
-            { 
-              wallet_address: publicKey.toString(),
-              ip_address: await fetch('https://api.ipify.org?format=json')
-                .then(res => res.json())
-                .then(data => data.ip)
-            }
-          ]);
-
-        if (insertError) throw insertError;
-
-        startTrial();
-        localStorage.setItem(
-          `lastPayment_${publicKey.toString()}`,
-          JSON.stringify({ 
-            timestamp: Date.now(), 
-            duration: 40 * 60 * 60 * 1000 // 40 hours in milliseconds
-          })
-        );
-        
-        console.log("Trial activated successfully");
-        setHasValidAccess(true);
-        onPaymentSuccess();
-        setShowDialog(false);
-        
+      if (existingTrials && existingTrials.length > 0) {
         toast({
-          title: "Trial Activated",
-          description: "Your 40-hour Kings tier trial has been activated!",
+          title: "Trial Not Available",
+          description: "You have already used your free trial",
+          variant: "destructive",
         });
-      } else {
-        toast({
-          title: "Payment Required",
-          description: `Please proceed with payment for the ${selectedTier} tier`,
-        });
+        return;
       }
+
+      const { error: insertError } = await supabase
+        .from('trial_attempts')
+        .insert([{ 
+          wallet_address: publicKey.toString(),
+          ip_address: await fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => data.ip)
+        }]);
+
+      if (insertError) throw insertError;
+
+      startTrial();
+      localStorage.setItem(
+        `lastPayment_${publicKey.toString()}`,
+        JSON.stringify({ 
+          timestamp: Date.now(), 
+          duration: 40 * 60 * 60 * 1000 // 40 hours in milliseconds
+        })
+      );
+      
+      console.log("Trial activated successfully");
+      setHasValidAccess(true);
+      onPaymentSuccess();
+      setShowDialog(false);
+      
+      toast({
+        title: "Trial Activated",
+        description: "Your 40-hour Kings tier trial has been activated!",
+      });
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -171,48 +252,32 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
               <div className="grid gap-6">
                 <Button 
                   variant="outline" 
-                  className={`w-full p-6 flex flex-col items-start space-y-3 ${
+                  className={`w-full p-6 ${
                     selectedTier === 'free' ? 'ring-2 ring-primary' : ''
                   }`}
                   onClick={() => handleTierSelection('free')}
                 >
-                  <div className="font-bold text-lg">Free Trial</div>
-                  <div className="text-sm text-muted-foreground text-left space-y-1">
-                    <p>• 40 hours of Kings tier access</p>
-                    <p>• Full feature access</p>
-                    <p>• No payment required</p>
-                  </div>
+                  <span className="font-bold text-lg">Free Trial</span>
                 </Button>
                 
                 <Button 
                   variant="outline" 
-                  className={`w-full p-6 flex flex-col items-start space-y-3 ${
+                  className={`w-full p-6 ${
                     selectedTier === 'basic' ? 'ring-2 ring-primary' : ''
                   }`}
                   onClick={() => handleTierSelection('basic')}
                 >
-                  <div className="font-bold text-lg">Basic Tier - 0.1 SOL/month</div>
-                  <div className="text-sm text-muted-foreground text-left space-y-1">
-                    <p>• Basic memecoin scanning</p>
-                    <p>• Standard metrics</p>
-                    <p>• Email support</p>
-                  </div>
+                  <span className="font-bold text-lg">Basic Tier - $25/month</span>
                 </Button>
                 
                 <Button 
                   variant="outline" 
-                  className={`w-full p-6 flex flex-col items-start space-y-3 ${
+                  className={`w-full p-6 ${
                     selectedTier === 'kings' ? 'ring-2 ring-primary' : ''
                   }`}
                   onClick={() => handleTierSelection('kings')}
                 >
-                  <div className="font-bold text-lg">Kings Tier - 0.2 SOL/month</div>
-                  <div className="text-sm text-muted-foreground text-left space-y-1">
-                    <p>• Advanced memecoin scanning</p>
-                    <p>• Real-time social metrics</p>
-                    <p>• AI-powered analysis</p>
-                    <p>• Priority support</p>
-                  </div>
+                  <span className="font-bold text-lg">Kings Tier - $100/month</span>
                 </Button>
               </div>
             ) : (
@@ -249,7 +314,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
                 Back
               </Button>
               <Button 
-                onClick={handleTrialConfirmation}
+                onClick={selectedTier === 'free' ? handleTrialConfirmation : handlePayment}
                 disabled={!acceptedTerms}
                 className="flex-1"
               >
