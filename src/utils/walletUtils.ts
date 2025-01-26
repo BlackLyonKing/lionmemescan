@@ -42,13 +42,25 @@ export const getTokenBalance = async (
 export const checkWalletBalance = async (
   connection: Connection,
   walletAddress: PublicKey,
-): Promise<number> => {
+  requiredAmount: number
+): Promise<{ hasBalance: boolean; currentBalance: number }> => {
   try {
+    console.log(`Checking SOL balance for wallet: ${walletAddress.toString()}`);
     const balance = await connection.getBalance(walletAddress);
-    return balance / LAMPORTS_PER_SOL;
+    const solBalance = balance / LAMPORTS_PER_SOL;
+    console.log(`Current SOL balance: ${solBalance}`);
+    console.log(`Required amount: ${requiredAmount}`);
+    
+    return {
+      hasBalance: solBalance >= requiredAmount,
+      currentBalance: solBalance
+    };
   } catch (error) {
     console.error("Error checking wallet balance:", error);
-    return 0;
+    return {
+      hasBalance: false,
+      currentBalance: 0
+    };
   }
 };
 

@@ -100,6 +100,24 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
     const solAmount = requiredAmount / solPrice;
     
     try {
+      // Check wallet balance before proceeding
+      const { hasBalance, currentBalance } = await checkWalletBalance(
+        connection,
+        publicKey,
+        solAmount
+      );
+
+      if (!hasBalance) {
+        toast({
+          title: "Insufficient Balance",
+          description: `You need ${solAmount.toFixed(4)} SOL but only have ${currentBalance.toFixed(4)} SOL`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log(`Proceeding with payment of ${solAmount} SOL`);
+      
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -115,6 +133,8 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       const signedTransaction = await signTransaction(transaction);
       const txid = await connection.sendRawTransaction(signedTransaction.serialize());
       await connection.confirmTransaction(txid);
+
+      console.log(`Transaction confirmed: ${txid}`);
 
       // Store subscription in database
       const { error: subscriptionError } = await supabase
