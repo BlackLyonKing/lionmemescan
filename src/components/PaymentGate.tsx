@@ -3,9 +3,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useTrialCountdown } from "@/hooks/useTrialCountdown";
 import { supabase } from "@/integrations/supabase/client";
-import { checkWalletBalance, hasValidSubscription } from "@/utils/walletUtils";
+import { checkWalletBalance, hasValidSubscription, getTreasuryWallet } from "@/utils/walletUtils";
 import { useSolanaPrice } from "@/hooks/useSolanaPrice";
-import { Connection, clusterApiUrl, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Connection, clusterApiUrl, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +30,7 @@ By accepting these terms, you acknowledge and agree to the following:
 `;
 
 export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void }) => {
-  const { publicKey, signMessage, signTransaction } = useWallet();
+  const { publicKey, signTransaction } = useWallet();
   const { toast } = useToast();
   const [hasValidAccess, setHasValidAccess] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
@@ -91,36 +91,24 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
       return;
     }
 
-    const connection = new Connection(clusterApiUrl("mainnet-beta"));
+    const connection = new Connection("https://solana-mainnet.phantom.app/YBPpkkN4g91xDiAnTE9r0RcMkjg0sKUIWvAfoFVJ", {
+      commitment: 'confirmed',
+      wsEndpoint: "wss://solana-mainnet.phantom.app/YBPpkkN4g91xDiAnTE9r0RcMkjg0sKUIWvAfoFVJ"
+    });
+
     const requiredAmount = selectedTier === 'basic' ? 25 : 100;
+    const solAmount = requiredAmount / solPrice;
     
-    const hasBalance = await checkWalletBalance(
-      connection,
-      publicKey,
-      requiredAmount,
-      solPrice
-    );
-
-    if (!hasBalance) {
-      toast({
-        title: "Insufficient Balance",
-        description: `Please ensure you have ${requiredAmount} USD worth of SOL, USDC, or USDT in your wallet`,
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
-      const solAmount = requiredAmount / solPrice;
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
-          toPubkey: new PublicKey("YOUR_TREASURY_WALLET"), // Replace with actual treasury wallet
+          toPubkey: getTreasuryWallet(),
           lamports: Math.floor(solAmount * LAMPORTS_PER_SOL),
         })
       );
 
-      const { blockhash } = await connection.getLatestBlockhash();
+      const { blockhash } = await connection.getLatestBlockhash('finalized');
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
@@ -160,7 +148,7 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
   };
 
   const handleTrialConfirmation = async () => {
-    if (!publicKey || !signMessage) {
+    if (!publicKey) {
       toast({
         title: "Error",
         description: "Please connect your wallet first",
@@ -179,12 +167,6 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
     }
 
     try {
-      console.log("Starting trial confirmation process");
-      const message = new TextEncoder().encode(
-        `I confirm that I want to start my 40-hour Kings tier trial and I accept the Terms and Conditions.\n\nTerms Version: 1.0\nTimestamp: ${Date.now()}`
-      );
-      await signMessage(message);
-
       const { data: existingTrials, error: trialError } = await supabase
         .from('trial_attempts')
         .select()
@@ -221,7 +203,6 @@ export const PaymentGate = ({ onPaymentSuccess }: { onPaymentSuccess: () => void
         })
       );
       
-      console.log("Trial activated successfully");
       setHasValidAccess(true);
       onPaymentSuccess();
       setShowDialog(false);

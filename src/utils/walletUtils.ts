@@ -42,40 +42,13 @@ export const getTokenBalance = async (
 export const checkWalletBalance = async (
   connection: Connection,
   walletAddress: PublicKey,
-  requiredAmountUSD: number,
-  solPrice: number
-): Promise<boolean> => {
-  console.log(`Checking wallet balance for ${requiredAmountUSD} USD requirement`);
-  
+): Promise<number> => {
   try {
-    // Check SOL balance
-    const solBalance = await connection.getBalance(walletAddress) / LAMPORTS_PER_SOL;
-    const solValue = solBalance * solPrice;
-    
-    if (solValue >= requiredAmountUSD) {
-      console.log(`Sufficient SOL balance found: ${solBalance} SOL (${solValue} USD)`);
-      return true;
-    }
-
-    // Check USDC balance
-    const usdcBalance = await getTokenBalance(connection, walletAddress, USDC_MINT);
-    if (usdcBalance >= requiredAmountUSD) {
-      console.log(`Sufficient USDC balance found: ${usdcBalance} USDC`);
-      return true;
-    }
-
-    // Check USDT balance
-    const usdtBalance = await getTokenBalance(connection, walletAddress, USDT_MINT);
-    if (usdtBalance >= requiredAmountUSD) {
-      console.log(`Sufficient USDT balance found: ${usdtBalance} USDT`);
-      return true;
-    }
-
-    console.log("Insufficient balance found in wallet");
-    return false;
+    const balance = await connection.getBalance(walletAddress);
+    return balance / LAMPORTS_PER_SOL;
   } catch (error) {
     console.error("Error checking wallet balance:", error);
-    return false;
+    return 0;
   }
 };
 
@@ -94,3 +67,5 @@ export const hasValidSubscription = async (walletAddress: string): Promise<boole
 
   return !!data;
 };
+
+export const getTreasuryWallet = () => TREASURY_WALLET;
