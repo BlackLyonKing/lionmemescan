@@ -155,6 +155,30 @@ export type Database = {
         }
         Relationships: []
       }
+      whitelisted_wallets: {
+        Row: {
+          created_at: string | null
+          id: string
+          tier: string
+          updated_at: string | null
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          tier: string
+          updated_at?: string | null
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          tier?: string
+          updated_at?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
