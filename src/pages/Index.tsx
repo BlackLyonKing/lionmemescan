@@ -1,6 +1,5 @@
 import { WalletButton } from "@/components/WalletButton";
-import { PaymentGate } from "@/components/PaymentGate";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TrendingBanner from "@/components/TrendingBanner";
 import { UserProfile } from "@/components/UserProfile";
 import { TokenBanner } from "@/components/TokenBanner";
@@ -10,6 +9,30 @@ import { MemecoinsTable } from "@/components/MemecoinsTable";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { TopTokensBanner } from "@/components/TopTokensBanner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useTrialCountdown } from "@/hooks/useTrialCountdown";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
+const TERMS_AND_CONDITIONS = `
+By accepting these terms, you acknowledge and agree to the following:
+
+1. This is a trial version of our premium service.
+2. The trial period lasts for 40 hours from activation.
+3. We may collect and analyze usage data to improve our services.
+4. You are responsible for any actions taken through your wallet during the trial.
+5. We reserve the right to terminate the trial at any time.
+6. After the trial period ends, you'll need to purchase a subscription to continue accessing premium features.
+7. This agreement is governed by applicable laws and regulations.
+`;
 
 const mockMemecoins = [
   {
@@ -29,9 +52,98 @@ const mockMemecoins = [
 
 const Index = () => {
   const [hasAccess, setHasAccess] = useState(false);
-  const [showPaymentGate, setShowPaymentGate] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { publicKey } = useWallet();
+  const { toast } = useToast();
+  const { startTrial, timeRemaining, formattedTime } = useTrialCountdown();
   const isAdmin = publicKey?.toBase58() === "4UGRoYBFRufAm7HVSSiQbwp9ETa9gFWzyQ4czwaeVAv3";
+
+  useEffect(() => {
+    if (publicKey) {
+      checkAccess();
+    }
+  }, [publicKey]);
+
+  const checkAccess = async () => {
+    if (!publicKey) return;
+
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select()
+      .eq('wallet_address', publicKey.toString())
+      .single();
+
+    if (subscription) {
+      setHasAccess(true);
+      return;
+    }
+
+    const trialData = localStorage.getItem(`trialStartTime_${publicKey.toString()}`);
+    if (!trialData) {
+      setShowTerms(true);
+    } else {
+      setHasAccess(true);
+    }
+  };
+
+  const handleTermsAccept = async () => {
+    if (!publicKey) return;
+    
+    if (!acceptedTerms) {
+      toast({
+        title: "Terms Required",
+        description: "Please accept the terms and conditions to continue",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: existingTrials, error: trialError } = await supabase
+        .from('trial_attempts')
+        .select()
+        .eq('wallet_address', publicKey.toString());
+
+      if (trialError) throw trialError;
+
+      if (existingTrials && existingTrials.length > 0) {
+        toast({
+          title: "Trial Not Available",
+          description: "You have already used your free trial",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error: insertError } = await supabase
+        .from('trial_attempts')
+        .insert([{ 
+          wallet_address: publicKey.toString(),
+          ip_address: await fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => data.ip)
+        }]);
+
+      if (insertError) throw insertError;
+
+      startTrial();
+      setHasAccess(true);
+      setShowTerms(false);
+      
+      toast({
+        title: "Trial Activated",
+        description: "Your 40-hour Kings tier trial has been activated!",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -48,77 +160,55 @@ const Index = () => {
             comprehensive scanning and analysis tools.
           </p>
 
-          {/* Tier Selection */}
-          <div className="grid gap-4 md:grid-cols-3 max-w-4xl mx-auto mb-8">
-            <div className="p-6 border rounded-lg shadow-sm bg-background">
-              <h3 className="text-xl font-bold mb-2">Free Trial</h3>
-              <p className="text-muted-foreground mb-4">
-                40 hours of Kings tier access
-              </p>
-              <ul className="text-sm text-left space-y-2 mb-6">
-                <li>• Full feature access</li>
-                <li>• No payment required</li>
-                <li>• Limited time only</li>
-              </ul>
-              <Button 
-                className="w-full"
-                onClick={() => setShowPaymentGate(true)}
-              >
+          {!publicKey && (
+            <div className="flex justify-center mb-8">
+              <WalletButton />
+            </div>
+          )}
+
+          {timeRemaining !== null && timeRemaining > 0 && (
+            <div className="bg-gradient-to-r from-crypto-purple to-crypto-cyan text-white px-4 py-2 rounded-lg inline-block">
+              Trial Time Remaining: {formattedTime}
+            </div>
+          )}
+        </div>
+
+        <Dialog open={showTerms} onOpenChange={setShowTerms}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Terms & Conditions</DialogTitle>
+              <DialogDescription>
+                <div className="mt-4 space-y-4">
+                  <div className="rounded-lg bg-muted p-6">
+                    <pre className="text-sm whitespace-pre-wrap">{TERMS_AND_CONDITIONS}</pre>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="terms"
+                      checked={acceptedTerms}
+                      onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                    />
+                    <label
+                      htmlFor="terms"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      I accept the terms and conditions
+                    </label>
+                  </div>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button onClick={handleTermsAccept} disabled={!acceptedTerms}>
                 Start Free Trial
               </Button>
-            </div>
-
-            <div className="p-6 border rounded-lg shadow-sm bg-background">
-              <h3 className="text-xl font-bold mb-2">Basic Tier</h3>
-              <p className="text-muted-foreground mb-4">
-                0.1 SOL/month
-              </p>
-              <ul className="text-sm text-left space-y-2 mb-6">
-                <li>• Basic memecoin scanning</li>
-                <li>• Standard metrics</li>
-                <li>• Email support</li>
-              </ul>
-              <Button 
-                className="w-full"
-                onClick={() => setShowPaymentGate(true)}
-              >
-                Choose Basic
-              </Button>
-            </div>
-
-            <div className="p-6 border rounded-lg shadow-sm bg-background relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-gradient-to-r from-crypto-purple to-crypto-cyan text-white px-3 py-1 text-sm">
-                Popular
-              </div>
-              <h3 className="text-xl font-bold mb-2">Kings Tier</h3>
-              <p className="text-muted-foreground mb-4">
-                0.2 SOL/month
-              </p>
-              <ul className="text-sm text-left space-y-2 mb-6">
-                <li>• Advanced memecoin scanning</li>
-                <li>• Real-time social metrics</li>
-                <li>• AI-powered analysis</li>
-                <li>• Priority support</li>
-              </ul>
-              <Button 
-                className="w-full bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90"
-                onClick={() => setShowPaymentGate(true)}
-              >
-                Choose Kings
-              </Button>
-            </div>
-          </div>
-        </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <TopTokensBanner />
         <TokenBanner hasAccess={hasAccess || isAdmin} />
-
-        {showPaymentGate && !hasAccess && !isAdmin ? (
-          <PaymentGate onPaymentSuccess={() => {
-            setHasAccess(true);
-            setShowPaymentGate(false);
-          }} />
-        ) : null}
 
         {(hasAccess || isAdmin) && (
           <div className="space-y-8">
