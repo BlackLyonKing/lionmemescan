@@ -2,12 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 interface TopToken {
   symbol: string;
   name: string;
   price: number;
   priceChange24h: number;
+  volume24h?: number;
+  marketCap?: number;
 }
 
 export const TopTokensBanner = () => {
@@ -26,6 +29,8 @@ export const TopTokensBanner = () => {
           name: pair.baseToken.name,
           price: parseFloat(pair.priceUsd),
           priceChange24h: parseFloat(pair.priceChange24h),
+          volume24h: parseFloat(pair.volume24h),
+          marketCap: parseFloat(pair.marketCap),
         }));
     },
     refetchInterval: 60000, // Refresh every minute
@@ -55,19 +60,33 @@ export const TopTokensBanner = () => {
             onClick={() => handleTokenClick(token.symbol)}
           >
             <div className="space-y-2">
-              <div className="font-semibold">{token.symbol}</div>
-              <div className="text-sm text-muted-foreground">{token.name}</div>
-              <div className="text-sm">
-                ${token.price.toFixed(6)}
-                <span
-                  className={`ml-2 ${
-                    token.priceChange24h >= 0 ? "text-green-500" : "text-red-500"
-                  }`}
-                >
-                  {token.priceChange24h >= 0 ? "+" : ""}
-                  {token.priceChange24h.toFixed(2)}%
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="font-semibold">{token.symbol}</div>
+                <div className={`flex items-center ${
+                  token.priceChange24h >= 0 ? "text-green-500" : "text-red-500"
+                }`}>
+                  {token.priceChange24h >= 0 ? (
+                    <ArrowUpRight className="h-4 w-4" />
+                  ) : (
+                    <ArrowDownRight className="h-4 w-4" />
+                  )}
+                  <span className="ml-1">
+                    {Math.abs(token.priceChange24h).toFixed(2)}%
+                  </span>
+                </div>
               </div>
+              <div className="text-sm text-muted-foreground">{token.name}</div>
+              <div className="text-sm font-medium">${token.price.toFixed(6)}</div>
+              {token.volume24h && (
+                <div className="text-xs text-muted-foreground">
+                  Vol: ${token.volume24h.toLocaleString()}
+                </div>
+              )}
+              {token.marketCap && (
+                <div className="text-xs text-muted-foreground">
+                  MCap: ${token.marketCap.toLocaleString()}
+                </div>
+              )}
             </div>
           </Card>
         ))}
