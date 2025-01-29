@@ -6,7 +6,6 @@ import { BacktestingDashboard } from "@/components/BacktestingDashboard";
 import { Navigation } from "@/components/Navigation";
 import { MemecoinsTable } from "@/components/MemecoinsTable";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { TopTokensBanner } from "@/components/TopTokensBanner";
 import { useTrialCountdown } from "@/hooks/useTrialCountdown";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -98,7 +97,6 @@ const Index = () => {
           onAccessGranted={() => setHasAccess(true)}
         />
 
-        <TopTokensBanner />
         <TokenBanner hasAccess={hasAccess || isAdmin} />
 
         {(hasAccess || isAdmin) && (
