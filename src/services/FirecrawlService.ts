@@ -48,9 +48,9 @@ export class FirecrawlService {
     this.firecrawlApp = new FirecrawlApp({ apiKey });
   }
 
-  static async crawlPumpFun(): Promise<CrawlResponse> {
+  static async scanMemecoins(): Promise<CrawlResponse> {
     try {
-      console.log('Initiating pump.fun crawl');
+      console.log('Initiating memecoin scan');
       const { data: { api_key } } = await supabase.functions.invoke('get-firecrawl-key');
       
       if (!api_key) {
@@ -94,7 +94,7 @@ export class FirecrawlService {
             }
           }
         }
-      }) as CrawlResponse;
+      });
 
       if ('success' in response && !response.success) {
         return response;
@@ -105,10 +105,10 @@ export class FirecrawlService {
         projects: (response as ExtractResponse).projects
       };
     } catch (error) {
-      console.error('Error during crawl:', error);
+      console.error('Error during scan:', error);
       return { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Failed to crawl website' 
+        error: error instanceof Error ? error.message : 'Failed to scan memecoins' 
       };
     }
   }

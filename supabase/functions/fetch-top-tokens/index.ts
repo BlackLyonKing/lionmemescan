@@ -18,7 +18,6 @@ serve(async (req) => {
 
     console.log('Fetching data from DexScreener API...');
     
-    // Using DexScreener API instead of Bullex as it's more reliable
     const response = await fetch(
       'https://api.dexscreener.com/latest/dex/tokens/solana',
       {
@@ -34,22 +33,24 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('DexScreener API response received');
+    console.log('DexScreener API response:', data);
     
-    if (!data || !Array.isArray(data.pairs)) {
+    if (!data || !data.pairs) {
+      console.error('Invalid response format:', data);
       throw new Error('Invalid response format from DexScreener API');
     }
 
     // Process and map the top tokens
     const topTokens = data.pairs
+      .filter(pair => pair.baseToken && pair.priceUsd && pair.liquidity?.usd)
       .sort((a, b) => parseFloat(b.priceUsd) - parseFloat(a.priceUsd))
       .slice(0, 20)
       .map(pair => ({
-        name: pair.baseToken.name,
-        symbol: pair.baseToken.symbol,
-        price: parseFloat(pair.priceUsd),
-        volume24h: parseFloat(pair.volume.h24),
-        liquidity: parseFloat(pair.liquidity.usd),
+        name: pair.baseToken.name || 'Unknown',
+        symbol: pair.baseToken.symbol || 'UNKNOWN',
+        price: parseFloat(pair.priceUsd) || 0,
+        volume24h: parseFloat(pair.volume?.h24 || '0'),
+        liquidity: parseFloat(pair.liquidity?.usd || '0'),
         address: pair.baseToken.address,
       }));
 
@@ -98,7 +99,7 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Failed to fetch top tokens',
+        error: error instanceof Error ? error.message : 'Failed to fetch top tokens',
         details: error.toString()
       }),
       {
