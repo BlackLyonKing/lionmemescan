@@ -18,6 +18,7 @@ import Profile from "./pages/Profile";
 import Scan from "./pages/Scan";
 import Terms from "./pages/Terms";
 import Transaction from "./pages/Transaction";
+import React from 'react';
 
 const endpoint = clusterApiUrl("devnet");
 const network = WalletAdapterNetwork.Devnet;
@@ -26,7 +27,7 @@ const wallets = [
   new WalletConnectWalletAdapter({ 
     network,
     options: {
-      projectId: "your-project-id", // Replace with your WalletConnect project ID
+      projectId: "your-project-id",
       metadata: {
         name: "Memecoin Scanner",
         description: "Scan and analyze memecoins",
@@ -37,33 +38,34 @@ const wallets = [
   })
 ];
 
-// Create a client
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>
-          <TooltipProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/alerts" element={<Alerts />} />
-                <Route path="/portfolio" element={<Portfolio />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/scan" element={<Scan />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/transaction/:tokenSymbol" element={<Transaction />} />
-              </Routes>
-              <Toaster />
-            </BrowserRouter>
-          </TooltipProvider>
-        </WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
-  </QueryClientProvider>
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <ConnectionProvider endpoint={endpoint}>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletModalProvider>
+            <TooltipProvider>
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/alerts" element={<Alerts />} />
+                  <Route path="/portfolio" element={<Portfolio />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/scan" element={<Scan />} />
+                  <Route path="/terms" element={<Terms />} />
+                  <Route path="/transaction/:tokenSymbol" element={<Transaction />} />
+                </Routes>
+                <Toaster />
+              </BrowserRouter>
+            </TooltipProvider>
+          </WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
+    </QueryClientProvider>
+  </React.StrictMode>
 );
 
 export default App;

@@ -6,25 +6,51 @@ interface ErrorResponse {
   error: string;
 }
 
-interface CrawlStatusResponse {
+interface ExtractResponse {
   success: true;
-  status: string;
-  completed: number;
-  total: number;
-  creditsUsed: number;
-  expiresAt: string;
-  data: any[];
+  projects: {
+    name: string;
+    symbol: string;
+    contract: string;
+    market_cap: number;
+    price: number;
+    volume: number;
+    holders: number;
+    socials: string[];
+    graduated_percent: number;
+    creation_time: string;
+    timestamp: string;
+  }[];
 }
 
-type CrawlResponse = CrawlStatusResponse | ErrorResponse;
+type CrawlResponse = ExtractResponse | ErrorResponse;
 
 export class FirecrawlService {
-  private static API_KEY_STORAGE_KEY = 'firecrawl_api_key';
   private static firecrawlApp: FirecrawlApp | null = null;
 
-  static async scanMemecoins(): Promise<CrawlResponse> {
+  static async testApiKey(apiKey: string): Promise<boolean> {
     try {
-      console.log('Initiating memecoin scan');
+      console.log('Testing API key:', apiKey);
+      this.firecrawlApp = new FirecrawlApp({ apiKey });
+      const response = await this.firecrawlApp.extract(['https://example.com'], {
+        prompt: 'Test prompt',
+        schema: { type: 'object' }
+      });
+      return 'success' in response && response.success;
+    } catch (error) {
+      console.error('Error testing API key:', error);
+      return false;
+    }
+  }
+
+  static async saveApiKey(apiKey: string): Promise<void> {
+    console.log('Saving API key');
+    this.firecrawlApp = new FirecrawlApp({ apiKey });
+  }
+
+  static async crawlPumpFun(): Promise<CrawlResponse> {
+    try {
+      console.log('Initiating pump.fun crawl');
       const { data: { api_key } } = await supabase.functions.invoke('get-firecrawl-key');
       
       if (!api_key) {
@@ -68,22 +94,21 @@ export class FirecrawlService {
             }
           }
         }
-      });
+      }) as CrawlResponse;
+
+      if ('success' in response && !response.success) {
+        return response;
+      }
 
       return {
         success: true,
-        status: 'completed',
-        completed: response.projects?.length || 0,
-        total: response.projects?.length || 0,
-        creditsUsed: 1,
-        expiresAt: new Date().toISOString(),
-        data: response.projects
+        projects: (response as ExtractResponse).projects
       };
     } catch (error) {
-      console.error('Error during memecoin scan:', error);
+      console.error('Error during crawl:', error);
       return { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Failed to scan memecoins' 
+        error: error instanceof Error ? error.message : 'Failed to crawl website' 
       };
     }
   }
