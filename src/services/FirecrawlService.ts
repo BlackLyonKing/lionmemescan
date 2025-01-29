@@ -23,7 +23,7 @@ interface ExtractResponse {
   }[];
 }
 
-type CrawlResponse = ExtractResponse | ErrorResponse;
+type CrawlResponse = ErrorResponse | ExtractResponse;
 
 export class FirecrawlService {
   private static firecrawlApp: FirecrawlApp | null = null;
@@ -94,7 +94,7 @@ export class FirecrawlService {
             }
           }
         }
-      });
+      }) as unknown as CrawlResponse;
 
       if ('success' in response && !response.success) {
         return response;
