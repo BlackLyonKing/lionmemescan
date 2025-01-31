@@ -8,7 +8,7 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -26,27 +26,43 @@ serve(async (req) => {
     );
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`DexScreener API returned status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('DexScreener API response received:', data);
+    console.log('DexScreener API response received');
     
-    if (!data || !data.pairs || !Array.isArray(data.pairs)) {
-      console.error('Invalid response format:', data);
-      throw new Error('Invalid response format from DexScreener API');
+    // Validate the response structure
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format: data is not an object');
     }
 
-    // Process and map the top tokens
+    if (!Array.isArray(data.pairs)) {
+      throw new Error('Invalid response format: pairs is not an array');
+    }
+
+    // Process and map the top tokens with additional validation
     const topTokens = data.pairs
-      .filter(pair => 
-        pair?.baseToken?.name && 
-        pair?.baseToken?.symbol && 
-        pair?.priceUsd && 
-        pair?.liquidity?.usd && 
-        !isNaN(parseFloat(pair.priceUsd)) && 
-        !isNaN(parseFloat(pair.liquidity.usd))
-      )
+      .filter(pair => {
+        try {
+          return (
+            pair &&
+            typeof pair === 'object' &&
+            pair.baseToken &&
+            typeof pair.baseToken === 'object' &&
+            typeof pair.baseToken.name === 'string' &&
+            typeof pair.baseToken.symbol === 'string' &&
+            typeof pair.priceUsd === 'string' &&
+            pair.liquidity &&
+            typeof pair.liquidity.usd === 'string' &&
+            !isNaN(parseFloat(pair.priceUsd)) &&
+            !isNaN(parseFloat(pair.liquidity.usd))
+          );
+        } catch (e) {
+          console.error('Error validating pair:', e);
+          return false;
+        }
+      })
       .sort((a, b) => parseFloat(b.liquidity.usd) - parseFloat(a.liquidity.usd))
       .slice(0, 20)
       .map(pair => ({
@@ -112,6 +128,7 @@ serve(async (req) => {
       }
 
       if (cachedData?.token_data) {
+        console.log('Returning cached data as fallback');
         return new Response(
           JSON.stringify(cachedData.token_data),
           {
