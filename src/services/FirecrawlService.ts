@@ -48,6 +48,71 @@ export class FirecrawlService {
     this.firecrawlApp = new FirecrawlApp({ apiKey });
   }
 
+  static async crawlPumpFun(): Promise<CrawlResponse> {
+    try {
+      console.log('Initiating pump.fun crawl');
+      const { data: { api_key } } = await supabase.functions.invoke('get-firecrawl-key');
+      
+      if (!api_key) {
+        return { 
+          success: false, 
+          error: 'Firecrawl API key not found' 
+        };
+      }
+
+      this.firecrawlApp = new FirecrawlApp({ apiKey: api_key });
+
+      const response = await this.firecrawlApp.extract([
+        "https://pump.fun/*"
+      ], {
+        prompt: 'Extract project details including name, symbol, contract address, market cap, price, volume, holders, social links, graduated percentage, creation time, and timestamp.',
+        schema: {
+          type: 'object',
+          properties: {
+            projects: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                  symbol: { type: 'string' },
+                  contract: { type: 'string' },
+                  market_cap: { type: 'number' },
+                  price: { type: 'number' },
+                  volume: { type: 'number' },
+                  holders: { type: 'number' },
+                  socials: { 
+                    type: 'array',
+                    items: { type: 'string' }
+                  },
+                  graduated_percent: { type: 'number' },
+                  creation_time: { type: 'string' },
+                  timestamp: { type: 'string' }
+                },
+                required: ['name', 'symbol', 'contract', 'market_cap', 'price', 'volume', 'holders', 'graduated_percent', 'creation_time', 'timestamp']
+              }
+            }
+          }
+        }
+      });
+
+      if ('success' in response && !response.success) {
+        return response as ErrorResponse;
+      }
+
+      return {
+        success: true,
+        projects: (response as any).projects
+      };
+    } catch (error) {
+      console.error('Error during crawl:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to crawl pump.fun' 
+      };
+    }
+  }
+
   static async scanMemecoins(): Promise<CrawlResponse> {
     try {
       console.log('Initiating memecoin scan');
@@ -94,15 +159,15 @@ export class FirecrawlService {
             }
           }
         }
-      }) as unknown as CrawlResponse;
+      });
 
       if ('success' in response && !response.success) {
-        return response;
+        return response as ErrorResponse;
       }
 
       return {
         success: true,
-        projects: (response as ExtractResponse).projects
+        projects: (response as any).projects
       };
     } catch (error) {
       console.error('Error during scan:', error);
