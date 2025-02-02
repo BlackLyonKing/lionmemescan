@@ -30,19 +30,51 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('DexScreener API response received');
+    console.log('DexScreener API response:', JSON.stringify(data));
     
     // Validate the response structure
     if (!data || typeof data !== 'object') {
       throw new Error('Invalid response format: data is not an object');
     }
 
-    if (!Array.isArray(data.pairs)) {
-      throw new Error('Invalid response format: pairs is not an array');
+    // Check if pairs exists and is an array, if not try to use the data directly
+    const pairs = Array.isArray(data.pairs) ? data.pairs : 
+                 Array.isArray(data) ? data : [];
+
+    if (pairs.length === 0) {
+      console.log('No valid pairs found in response');
+      // Try to get cached data as fallback
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+
+      const { data: cachedData } = await supabaseClient
+        .from('cached_top_tokens')
+        .select('token_data')
+        .order('last_updated', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (cachedData?.token_data) {
+        console.log('Returning cached data as fallback');
+        return new Response(
+          JSON.stringify(cachedData.token_data),
+          {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+            },
+            status: 200,
+          },
+        );
+      }
+      
+      throw new Error('No valid pairs found and no cached data available');
     }
 
-    // Process and map the top tokens with additional validation
-    const topTokens = data.pairs
+    // Process and map the top tokens
+    const topTokens = pairs
       .filter(pair => {
         try {
           return (
@@ -74,27 +106,18 @@ serve(async (req) => {
         address: pair.baseToken.address,
       }));
 
-    if (topTokens.length === 0) {
-      throw new Error('No valid tokens found in the response');
-    }
-
-    // Create Supabase client
+    // Cache the results
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    );
 
-    // Cache the results
-    const { error: upsertError } = await supabaseClient
+    await supabaseClient
       .from('cached_top_tokens')
       .upsert({
         token_data: topTokens,
         last_updated: new Date().toISOString()
-      })
-
-    if (upsertError) {
-      console.error('Error caching results:', upsertError);
-    }
+      });
 
     return new Response(
       JSON.stringify(topTokens),
@@ -105,45 +128,10 @@ serve(async (req) => {
         },
         status: 200,
       },
-    )
+    );
   } catch (error) {
     console.error('Error in fetch-top-tokens:', error);
     
-    // Try to fetch cached data as fallback
-    try {
-      const supabaseClient = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      )
-
-      const { data: cachedData, error: fetchError } = await supabaseClient
-        .from('cached_top_tokens')
-        .select('token_data')
-        .order('last_updated', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      if (cachedData?.token_data) {
-        console.log('Returning cached data as fallback');
-        return new Response(
-          JSON.stringify(cachedData.token_data),
-          {
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'application/json',
-            },
-            status: 200,
-          },
-        )
-      }
-    } catch (cacheError) {
-      console.error('Error fetching cached data:', cacheError);
-    }
-
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : 'Failed to fetch top tokens',
@@ -156,6 +144,6 @@ serve(async (req) => {
         },
         status: 500,
       },
-    )
+    );
   }
-})
+});

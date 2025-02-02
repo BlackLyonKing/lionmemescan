@@ -35,7 +35,7 @@ export const BacktestingDashboard = () => {
       for (const token of tokens) {
         const analysis = await analyzeToken(token.address);
         if (analysis) {
-          const signal = await generateTradingSignal(analysis);
+          const signal = await analysis.generateTradingSignal();
           backtestResults.push({
             timestamp: new Date().toISOString(),
             signal,

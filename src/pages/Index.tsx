@@ -127,7 +127,7 @@ const Index = () => {
         {(hasAccess || isAdmin) && (
           <div className="space-y-8">
             <TrendingBanner />
-            <BacktestingDashboard historicalData={mockMemecoins} />
+            <BacktestingDashboard />
             <MemecoinsTable coins={mockMemecoins} />
           </div>
         )}
