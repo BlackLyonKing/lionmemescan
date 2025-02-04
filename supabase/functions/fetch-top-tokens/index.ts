@@ -19,17 +19,18 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Check if we have recent cached data
-    const { data: cachedData } = await supabase
+    const { data: cachedData, error: cacheError } = await supabase
       .from('cached_top_tokens')
       .select('*')
       .order('last_updated', { ascending: false })
       .limit(1)
       .single();
 
-    // If we have recent data (less than 1 minute old), return it
+    // If we have recent data (less than 5 minutes old), return it
     if (cachedData && 
         cachedData.last_updated && 
-        (new Date().getTime() - new Date(cachedData.last_updated).getTime()) < 60000) {
+        (new Date().getTime() - new Date(cachedData.last_updated).getTime()) < 300000) {
+      console.log('Returning cached data');
       return new Response(
         JSON.stringify(cachedData.token_data),
         { 
@@ -47,6 +48,19 @@ serve(async (req) => {
     const data = await response.json();
 
     if (!data.pairs || !Array.isArray(data.pairs)) {
+      // If no fresh data and we have cached data (even if old), return cached
+      if (cachedData) {
+        console.log('No fresh data available, returning old cached data');
+        return new Response(
+          JSON.stringify(cachedData.token_data),
+          { 
+            headers: { 
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+      }
       throw new Error('Invalid response format: pairs is not an array');
     }
 
@@ -70,13 +84,34 @@ serve(async (req) => {
       .sort((a: any, b: any) => b.marketCap - a.marketCap)
       .slice(0, 100);
 
+    if (processedData.length === 0) {
+      // If no valid pairs and we have cached data (even if old), return cached
+      if (cachedData) {
+        console.log('No valid pairs found, returning old cached data');
+        return new Response(
+          JSON.stringify(cachedData.token_data),
+          { 
+            headers: { 
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+      }
+      throw new Error('No valid pairs found and no cached data available');
+    }
+
     // Cache the new data
-    await supabase
+    const { error: insertError } = await supabase
       .from('cached_top_tokens')
       .insert({
         token_data: processedData,
         last_updated: new Date().toISOString(),
       });
+
+    if (insertError) {
+      console.error('Error caching data:', insertError);
+    }
 
     return new Response(
       JSON.stringify(processedData),

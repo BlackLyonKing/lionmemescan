@@ -52,14 +52,8 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        orbo: {
-          purple: "#9b87f5",
-          blue: "#1EAEDB",
-          dark: "#1A1F2C",
-          darker: "#221F26",
-          gray: "#333333",
-          lightGray: "#C8C8C9",
-        },
+        'crypto-purple': "hsl(255 100% 75%)",
+        'crypto-cyan': "hsl(180 100% 75%)",
       },
       borderRadius: {
         lg: "var(--radius)",
