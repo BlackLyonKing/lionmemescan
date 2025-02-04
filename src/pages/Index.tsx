@@ -1,6 +1,5 @@
 import { WalletButton } from "@/components/WalletButton";
 import { useState, useEffect } from "react";
-import TrendingBanner from "@/components/TrendingBanner";
 import { TokenBanner } from "@/components/TokenBanner";
 import { BacktestingDashboard } from "@/components/BacktestingDashboard";
 import { Navigation } from "@/components/Navigation";
@@ -10,7 +9,7 @@ import { useTrialCountdown } from "@/hooks/useTrialCountdown";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { TrialAccessDialog } from "@/components/TrialAccessDialog";
-import { Search, TrendingUp, Zap, BarChart3 } from "lucide-react";
+import { Search, TrendingUp, Zap, BarChart3, Rocket } from "lucide-react";
 
 const mockMemecoins = [
   {
@@ -65,15 +64,15 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-radial from-dark-100 to-dark-200 text-foreground">
+    <div className="min-h-screen bg-gradient-radial from-orbo-dark to-orbo-darker text-foreground">
       <Navigation />
       
       <div className="container mx-auto pt-24 space-y-8 px-4">
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-6 gradient-text">
-            Memecoin Scanner
+          <h1 className="text-6xl font-bold mb-6 gradient-text">
+            PumpFun Scanner
           </h1>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-8">
+          <p className="text-xl text-orbo-lightGray max-w-2xl mx-auto mb-8">
             Your advanced toolkit for discovering and analyzing the next big memecoins on Solana. 
             Get real-time insights, track social metrics, and stay ahead of the market.
           </p>
@@ -100,7 +99,7 @@ const Index = () => {
             placeholder="Search by token name, symbol, or contract address..."
             className="search-input"
           />
-          <div className="flex gap-4 mt-4 justify-center">
+          <div className="flex gap-4 mt-4 justify-center flex-wrap">
             <button className="filter-button active-filter">
               <TrendingUp className="w-4 h-4 inline-block mr-2" />
               Trending
@@ -112,6 +111,10 @@ const Index = () => {
             <button className="filter-button">
               <BarChart3 className="w-4 h-4 inline-block mr-2" />
               Top Gainers
+            </button>
+            <button className="filter-button">
+              <Rocket className="w-4 h-4 inline-block mr-2" />
+              About to Graduate
             </button>
           </div>
         </div>
@@ -126,7 +129,6 @@ const Index = () => {
 
         {(hasAccess || isAdmin) && (
           <div className="space-y-8">
-            <TrendingBanner />
             <BacktestingDashboard />
             <MemecoinsTable coins={mockMemecoins} />
           </div>

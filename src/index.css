@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --background: 240 10% 3.9%;
+    --background: 230 24% 13%;
     --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
+    --card: 230 24% 13%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
+    --popover: 230 24% 13%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
+    --primary: 252 83% 74%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 230 24% 18%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
+    --muted: 230 24% 18%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    --accent: 230 24% 18%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --border: 230 24% 18%;
+    --input: 230 24% 18%;
+    --ring: 252 83% 74%;
     --radius: 0.5rem;
   }
 }
@@ -32,24 +32,24 @@
     @apply border-border;
   }
   body {
-    @apply bg-dark-100 text-foreground;
+    @apply bg-orbo-dark text-foreground;
   }
 }
 
 .glass-card {
-  @apply bg-dark-200/70 backdrop-blur-lg border border-dark-300/20 rounded-lg shadow-xl;
+  @apply bg-orbo-darker/70 backdrop-blur-lg border border-orbo-gray/20 rounded-lg shadow-xl;
 }
 
 .gradient-border {
-  @apply relative rounded-lg p-[1px] bg-gradient-to-r from-crypto-purple to-crypto-cyan;
+  @apply relative rounded-lg p-[1px] bg-gradient-to-r from-orbo-purple to-orbo-blue;
 }
 
 .gradient-border > * {
-  @apply bg-dark-100 rounded-lg;
+  @apply bg-orbo-dark rounded-lg;
 }
 
 .token-card {
-  @apply bg-dark-200 rounded-lg shadow-lg p-6 border border-dark-300 hover:shadow-xl transition-all duration-300;
+  @apply bg-orbo-darker rounded-lg shadow-lg p-6 border border-orbo-gray hover:shadow-xl transition-all duration-300;
 }
 
 .metrics-grid {
@@ -57,11 +57,11 @@
 }
 
 .metric-card {
-  @apply bg-dark-200/80 backdrop-blur-sm rounded-lg p-4 border border-dark-300;
+  @apply bg-orbo-darker/80 backdrop-blur-sm rounded-lg p-4 border border-orbo-gray;
 }
 
 .chart-container {
-  @apply bg-dark-200/90 rounded-lg p-4 shadow-lg border border-dark-300;
+  @apply bg-orbo-darker/90 rounded-lg p-4 shadow-lg border border-orbo-gray;
 }
 
 .glow-effect {
@@ -69,15 +69,15 @@
 }
 
 .gradient-text {
-  @apply bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-orbo-purple to-orbo-blue bg-clip-text text-transparent;
 }
 
 .gradient-bg {
-  @apply bg-gradient-to-r from-crypto-purple to-crypto-cyan;
+  @apply bg-gradient-to-r from-orbo-purple to-orbo-blue;
 }
 
 .dark-glass {
-  @apply bg-dark-200/40 backdrop-blur-md border border-dark-300/30;
+  @apply bg-orbo-darker/40 backdrop-blur-md border border-orbo-gray/30;
 }
 
 .hover-scale {
@@ -93,9 +93,9 @@
 }
 
 .search-input {
-  @apply w-full h-14 pl-12 pr-4 rounded-xl bg-dark-200/60 border border-dark-300/50 
+  @apply w-full h-14 pl-12 pr-4 rounded-xl bg-orbo-darker/60 border border-orbo-gray/50 
          text-foreground placeholder-gray-400 focus:outline-none focus:ring-2 
-         focus:ring-crypto-purple/50 transition-all duration-200;
+         focus:ring-orbo-purple/50 transition-all duration-200;
 }
 
 .search-icon {
@@ -103,11 +103,11 @@
 }
 
 .filter-button {
-  @apply px-4 py-2 rounded-lg bg-dark-200/60 border border-dark-300/50 
-         text-sm font-medium text-gray-300 hover:bg-dark-300/60 
+  @apply px-4 py-2 rounded-lg bg-orbo-darker/60 border border-orbo-gray/50 
+         text-sm font-medium text-gray-300 hover:bg-orbo-gray/60 
          transition-all duration-200;
 }
 
 .active-filter {
-  @apply bg-crypto-purple/20 border-crypto-purple/50 text-crypto-purple;
+  @apply bg-orbo-purple/20 border-orbo-purple/50 text-orbo-purple;
 }

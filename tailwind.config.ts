@@ -52,19 +52,13 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        crypto: {
-          purple: "#8B5CF6",
-          cyan: "#0EA5E9",
-          pink: "#EC4899",
-          orange: "#F97316",
-          green: "#22C55E",
-          red: "#EF4444",
-        },
-        dark: {
-          100: "#1E1E1E",
-          200: "#2D2D2D",
-          300: "#3D3D3D",
-          400: "#4D4D4D",
+        orbo: {
+          purple: "#9b87f5",
+          blue: "#1EAEDB",
+          dark: "#1A1F2C",
+          darker: "#221F26",
+          gray: "#333333",
+          lightGray: "#C8C8C9",
         },
       },
       borderRadius: {
@@ -86,19 +80,15 @@ export default {
             transform: "translateX(100%)",
           },
         },
-        scroll: {
-          "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(-50%)" },
-        },
         glow: {
           "0%": {
-            boxShadow: "0 0 0px rgb(139 92 246 / 0.5)",
+            boxShadow: "0 0 0px rgb(155 135 245 / 0.5)",
           },
           "50%": {
-            boxShadow: "0 0 30px rgb(139 92 246 / 0.5)",
+            boxShadow: "0 0 30px rgb(155 135 245 / 0.5)",
           },
           "100%": {
-            boxShadow: "0 0 0px rgb(139 92 246 / 0.5)",
+            boxShadow: "0 0 0px rgb(155 135 245 / 0.5)",
           },
         },
       },
@@ -106,7 +96,6 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         shimmer: "shimmer 2s infinite",
-        scroll: "scroll 20s linear infinite",
         glow: "glow 2s ease-in-out infinite",
       },
       backgroundImage: {
