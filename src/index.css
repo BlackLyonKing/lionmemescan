@@ -33,6 +33,7 @@
   }
   body {
     @apply bg-orbo-dark text-foreground;
+    background-image: radial-gradient(circle at center, rgba(155, 135, 245, 0.1) 0%, transparent 70%);
   }
 }
 
@@ -110,4 +111,39 @@
 
 .active-filter {
   @apply bg-orbo-purple/20 border-orbo-purple/50 text-orbo-purple;
+}
+
+/* Animations */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 0px rgb(155 135 245 / 0.5);
+  }
+  50% {
+    box-shadow: 0 0 30px rgb(155 135 245 / 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0px rgb(155 135 245 / 0.5);
+  }
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-orbo-darker;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-orbo-gray/50 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-orbo-gray;
 }
