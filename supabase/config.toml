@@ -1,1 +1,4 @@
 project_id = "mndtxwyellifepixienq"
+
+[functions.pump-portal-websocket]
+verify_jwt = false

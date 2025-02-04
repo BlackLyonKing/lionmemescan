@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { TrialAccessDialog } from "@/components/TrialAccessDialog";
 import { Search, TrendingUp, Zap, BarChart3, Rocket } from "lucide-react";
+import { webSocketService } from "@/services/WebSocketService";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const mockMemecoins = [
   {
@@ -34,6 +36,12 @@ const Index = () => {
   const { toast } = useToast();
   const { timeRemaining, formattedTime } = useTrialCountdown();
   const isAdmin = publicKey?.toBase58() === "4UGRoYBFRufAm7HVSSiQbwp9ETa9gFWzyQ4czwaeVAv3";
+
+  const [latestToken, setLatestToken] = useState<{
+    name: string;
+    address: string;
+    timestamp: string;
+  } | null>(null);
 
   useEffect(() => {
     if (publicKey) {
@@ -63,6 +71,36 @@ const Index = () => {
     }
   };
 
+  useEffect(() => {
+    // Connect to WebSocket when component mounts
+    webSocketService.connect();
+
+    // Subscribe to WebSocket messages
+    const handleMessage = (data: any) => {
+      if (data.type === 'newToken') {
+        setLatestToken({
+          name: data.token.name,
+          address: data.token.address,
+          timestamp: new Date().toLocaleString()
+        });
+        
+        toast({
+          title: "New Token Created",
+          description: `${data.token.name} has been created`,
+          className: "bg-gradient-to-r from-crypto-purple to-crypto-cyan text-white",
+        });
+      }
+    };
+
+    webSocketService.subscribeToMessages(handleMessage);
+
+    // Cleanup on unmount
+    return () => {
+      webSocketService.unsubscribeFromMessages(handleMessage);
+      webSocketService.disconnect();
+    };
+  }, [toast]);
+
   return (
     <div className="min-h-screen bg-gradient-radial from-orbo-dark to-orbo-darker text-foreground">
       <Navigation />
@@ -91,6 +129,17 @@ const Index = () => {
             </div>
           )}
         </div>
+
+        {latestToken && (
+          <Alert className="bg-gradient-to-r from-crypto-purple/10 to-crypto-cyan/10 border border-crypto-purple/20">
+            <AlertDescription>
+              New token created: {latestToken.name} 
+              <span className="text-sm text-muted-foreground ml-2">
+                ({latestToken.timestamp})
+              </span>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div className="search-container mb-12">
           <Search className="search-icon" />
