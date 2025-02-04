@@ -1,148 +1,105 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    console.log('Fetching data from DexScreener API...');
-    
-    const response = await fetch(
-      'https://api.dexscreener.com/latest/dex/tokens/solana',
-      {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      }
-    );
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    if (!response.ok) {
-      throw new Error(`DexScreener API returned status: ${response.status}`);
-    }
+    // Check if we have recent cached data
+    const { data: cachedData } = await supabase
+      .from('cached_top_tokens')
+      .select('*')
+      .order('last_updated', { ascending: false })
+      .limit(1)
+      .single();
 
-    const data = await response.json();
-    console.log('DexScreener API response:', JSON.stringify(data));
-    
-    // Validate the response structure
-    if (!data || typeof data !== 'object') {
-      throw new Error('Invalid response format: data is not an object');
-    }
-
-    // Check if pairs exists and is an array, if not try to use the data directly
-    const pairs = Array.isArray(data.pairs) ? data.pairs : 
-                 Array.isArray(data) ? data : [];
-
-    if (pairs.length === 0) {
-      console.log('No valid pairs found in response');
-      // Try to get cached data as fallback
-      const supabaseClient = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-      );
-
-      const { data: cachedData } = await supabaseClient
-        .from('cached_top_tokens')
-        .select('token_data')
-        .order('last_updated', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (cachedData?.token_data) {
-        console.log('Returning cached data as fallback');
-        return new Response(
-          JSON.stringify(cachedData.token_data),
-          {
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'application/json',
-            },
-            status: 200,
+    // If we have recent data (less than 1 minute old), return it
+    if (cachedData && 
+        cachedData.last_updated && 
+        (new Date().getTime() - new Date(cachedData.last_updated).getTime()) < 60000) {
+      return new Response(
+        JSON.stringify(cachedData.token_data),
+        { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json',
           },
-        );
-      }
-      
-      throw new Error('No valid pairs found and no cached data available');
+        },
+      );
     }
 
-    // Process and map the top tokens
-    const topTokens = pairs
-      .filter(pair => {
-        try {
-          return (
-            pair &&
-            typeof pair === 'object' &&
-            pair.baseToken &&
-            typeof pair.baseToken === 'object' &&
-            typeof pair.baseToken.name === 'string' &&
-            typeof pair.baseToken.symbol === 'string' &&
-            typeof pair.priceUsd === 'string' &&
-            pair.liquidity &&
-            typeof pair.liquidity.usd === 'string' &&
-            !isNaN(parseFloat(pair.priceUsd)) &&
-            !isNaN(parseFloat(pair.liquidity.usd))
-          );
-        } catch (e) {
-          console.error('Error validating pair:', e);
-          return false;
-        }
-      })
-      .sort((a, b) => parseFloat(b.liquidity.usd) - parseFloat(a.liquidity.usd))
-      .slice(0, 20)
-      .map(pair => ({
+    // Fetch fresh data from DexScreener
+    console.log('Fetching fresh data from DexScreener');
+    const response = await fetch('https://api.dexscreener.com/latest/dex/tokens/solana');
+    const data = await response.json();
+
+    if (!data.pairs || !Array.isArray(data.pairs)) {
+      throw new Error('Invalid response format: pairs is not an array');
+    }
+
+    // Process and format the data
+    const processedData = data.pairs
+      .filter((pair: any) => 
+        pair.baseToken && 
+        pair.priceUsd && 
+        pair.volume24h &&
+        pair.liquidity?.usd
+      )
+      .map((pair: any) => ({
         name: pair.baseToken.name,
         symbol: pair.baseToken.symbol,
         price: parseFloat(pair.priceUsd),
-        volume24h: pair.volume?.h24 ? parseFloat(pair.volume.h24) : 0,
-        liquidity: parseFloat(pair.liquidity.usd),
-        address: pair.baseToken.address,
-      }));
+        priceChange24h: parseFloat(pair.priceChange24h || 0),
+        volume24h: parseFloat(pair.volume24h),
+        marketCap: parseFloat(pair.liquidity?.usd || 0) * parseFloat(pair.priceUsd),
+        contractAddress: pair.baseToken.address,
+      }))
+      .sort((a: any, b: any) => b.marketCap - a.marketCap)
+      .slice(0, 100);
 
-    // Cache the results
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    await supabaseClient
+    // Cache the new data
+    await supabase
       .from('cached_top_tokens')
-      .upsert({
-        token_data: topTokens,
-        last_updated: new Date().toISOString()
+      .insert({
+        token_data: processedData,
+        last_updated: new Date().toISOString(),
       });
 
     return new Response(
-      JSON.stringify(topTokens),
-      {
-        headers: {
+      JSON.stringify(processedData),
+      { 
+        headers: { 
           ...corsHeaders,
           'Content-Type': 'application/json',
         },
-        status: 200,
       },
     );
   } catch (error) {
-    console.error('Error in fetch-top-tokens:', error);
-    
+    console.error('Error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'Failed to fetch top tokens',
+        error: error.message,
         details: error.toString()
       }),
-      {
-        headers: {
+      { 
+        status: 500,
+        headers: { 
           ...corsHeaders,
           'Content-Type': 'application/json',
         },
-        status: 500,
       },
     );
   }

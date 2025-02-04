@@ -1,70 +1,74 @@
 import { useEffect, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Bitcoin, AlertTriangle } from "lucide-react";
+import { Bitcoin, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Memecoin } from '@/types/memecoin';
-import { getRiskColor, getRiskLabel } from '@/utils/riskCalculator';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { useQuery } from "@tanstack/react-query";
 
 interface TokenBannerProps {
   hasAccess: boolean;
 }
 
-export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
-  const [trendingTokens, setTrendingTokens] = useState<Memecoin[]>([]);
+interface Token {
+  name: string;
+  symbol: string;
+  price: number;
+  priceChange24h: number;
+  volume24h: number;
+  marketCap: number;
+  contractAddress: string;
+}
+
+const fetchTopTokens = async (): Promise<Token[]> => {
+  console.log('Fetching top tokens data');
+  const { data, error } = await supabase.functions.invoke('fetch-top-tokens');
   
-  useEffect(() => {
-    const fetchTopTokens = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('fetch-top-tokens');
-        
-        if (error) throw error;
-        
-        setTrendingTokens(data.map((token: any) => ({
-          name: token.name,
-          symbol: token.symbol,
-          marketCap: token.liquidity * token.price,
-          socialScore: Math.floor(Math.random() * 100), // This would be replaced with real data
-          dexStatus: "paid",
-          meta: ["trending"],
-          bundledBuys: Math.floor(Math.random() * 50),
-          riskScore: Math.floor(Math.random() * 10) + 1,
-        })));
-      } catch (error) {
-        console.error('Error fetching top tokens:', error);
-      }
-    };
+  if (error) {
+    console.error('Error fetching top tokens:', error);
+    throw error;
+  }
+  
+  return data;
+};
 
-    fetchTopTokens();
-    const interval = setInterval(fetchTopTokens, 3600000); // Fetch every hour
-
-    return () => clearInterval(interval);
-  }, []);
+export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
+  const { data: tokens = [], isLoading } = useQuery({
+    queryKey: ['topTokens'],
+    queryFn: fetchTopTokens,
+    refetchInterval: 60000, // Refetch every minute
+  });
+  
+  if (isLoading) {
+    return (
+      <div className="w-full overflow-hidden mb-8">
+        <div className="flex gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card 
+              key={i}
+              className="flex items-center gap-3 p-3 min-w-[250px] bg-white/5 backdrop-blur-sm animate-pulse"
+            >
+              <div className="h-8 w-8 rounded-full bg-white/10" />
+              <div className="space-y-2 flex-1">
+                <div className="h-4 w-24 bg-white/10 rounded" />
+                <div className="h-4 w-16 bg-white/10 rounded" />
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="w-full overflow-hidden mb-8">
       <div className="flex gap-4 animate-scroll">
-        {trendingTokens.map((token, index) => (
+        {tokens.map((token, index) => (
           <Card 
             key={index}
             className="flex items-center gap-3 p-3 min-w-[250px] bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
           >
             <div className="flex-shrink-0">
-              {token.logoUrl ? (
-                <img 
-                  src={token.logoUrl} 
-                  alt={token.symbol}
-                  className="w-8 h-8 rounded-full"
-                />
-              ) : (
-                <Bitcoin className="w-8 h-8 text-crypto-purple" />
-              )}
+              <Bitcoin className="w-8 h-8 text-crypto-purple" />
             </div>
             <div className="flex flex-col">
               <span className={cn(
@@ -73,32 +77,25 @@ export const TokenBanner = ({ hasAccess }: TokenBannerProps) => {
               )}>
                 {token.name}
               </span>
-              <span className="text-sm font-semibold bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent">
-                ${(token.marketCap / 1000000).toFixed(2)}M
-              </span>
               <div className="flex items-center gap-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <div className="flex items-center gap-1">
-                        <span className={cn(
-                          "text-sm",
-                          getRiskColor(token.riskScore || 5)
-                        )}>
-                          {getRiskLabel(token.riskScore || 5)}
-                        </span>
-                        <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Risk Score: {token.riskScore}/10</p>
-                      <p>Lower is better</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <span className="text-sm font-semibold text-green-400">
-                  {token.bundledBuys} buys
+                <span className="text-sm font-semibold bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent">
+                  ${token.price.toFixed(6)}
                 </span>
+                <span className={cn(
+                  "text-xs flex items-center gap-1",
+                  token.priceChange24h >= 0 ? "text-green-400" : "text-red-400"
+                )}>
+                  {token.priceChange24h >= 0 ? (
+                    <TrendingUp className="w-3 h-3" />
+                  ) : (
+                    <TrendingDown className="w-3 h-3" />
+                  )}
+                  {Math.abs(token.priceChange24h).toFixed(2)}%
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>Vol: ${(token.volume24h / 1000000).toFixed(2)}M</span>
+                <span>MCap: ${(token.marketCap / 1000000).toFixed(2)}M</span>
               </div>
             </div>
           </Card>

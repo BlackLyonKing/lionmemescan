@@ -1,29 +1,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+ 
 @layer base {
   :root {
-    --background: 230 24% 13%;
-    --foreground: 0 0% 98%;
-    --card: 230 24% 13%;
-    --card-foreground: 0 0% 98%;
-    --popover: 230 24% 13%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 252 83% 74%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 230 24% 18%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 230 24% 18%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 230 24% 18%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 230 24% 18%;
-    --input: 230 24% 18%;
-    --ring: 252 83% 74%;
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+
+    --muted: 223 47% 11%;
+    --muted-foreground: 215.4 16.3% 56.9%;
+
+    --accent: 216 34% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 215 20.2% 65.1%;
+
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 1.2%;
+
+    --secondary: 222.2 47.4% 11.2%;
+    --secondary-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --ring: 216 34% 17%;
+
     --radius: 0.5rem;
+
+    --crypto-purple: 255 100% 75%;
+    --crypto-cyan: 180 100% 75%;
   }
 }
 
@@ -32,118 +45,61 @@
     @apply border-border;
   }
   body {
-    @apply bg-orbo-dark text-foreground;
-    background-image: radial-gradient(circle at center, rgba(155, 135, 245, 0.1) 0%, transparent 70%);
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-.glass-card {
-  @apply bg-orbo-darker/70 backdrop-blur-lg border border-orbo-gray/20 rounded-lg shadow-xl;
+@layer utilities {
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent;
+  }
+
+  .search-container {
+    @apply relative;
+  }
+
+  .search-input {
+    @apply w-full px-12 py-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg 
+           text-lg placeholder:text-muted-foreground focus:outline-none focus:ring-2 
+           focus:ring-crypto-purple/50 transition-all duration-300;
+  }
+
+  .search-icon {
+    @apply absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground;
+  }
+
+  .filter-button {
+    @apply px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm
+           hover:bg-white/10 transition-all duration-300 text-sm font-medium;
+  }
+
+  .filter-button.active-filter {
+    @apply border-crypto-purple text-crypto-purple;
+  }
 }
 
-.gradient-border {
-  @apply relative rounded-lg p-[1px] bg-gradient-to-r from-orbo-purple to-orbo-blue;
-}
-
-.gradient-border > * {
-  @apply bg-orbo-dark rounded-lg;
-}
-
-.token-card {
-  @apply bg-orbo-darker rounded-lg shadow-lg p-6 border border-orbo-gray hover:shadow-xl transition-all duration-300;
-}
-
-.metrics-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
-}
-
-.metric-card {
-  @apply bg-orbo-darker/80 backdrop-blur-sm rounded-lg p-4 border border-orbo-gray;
-}
-
-.chart-container {
-  @apply bg-orbo-darker/90 rounded-lg p-4 shadow-lg border border-orbo-gray;
-}
-
-.glow-effect {
-  @apply animate-glow;
-}
-
-.gradient-text {
-  @apply bg-gradient-to-r from-orbo-purple to-orbo-blue bg-clip-text text-transparent;
-}
-
-.gradient-bg {
-  @apply bg-gradient-to-r from-orbo-purple to-orbo-blue;
-}
-
-.dark-glass {
-  @apply bg-orbo-darker/40 backdrop-blur-md border border-orbo-gray/30;
-}
-
-.hover-scale {
-  @apply transition-transform duration-200 hover:scale-105;
-}
-
-.token-grid {
-  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
-}
-
-.search-container {
-  @apply relative w-full max-w-3xl mx-auto;
-}
-
-.search-input {
-  @apply w-full h-14 pl-12 pr-4 rounded-xl bg-orbo-darker/60 border border-orbo-gray/50 
-         text-foreground placeholder-gray-400 focus:outline-none focus:ring-2 
-         focus:ring-orbo-purple/50 transition-all duration-200;
-}
-
-.search-icon {
-  @apply absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400;
-}
-
-.filter-button {
-  @apply px-4 py-2 rounded-lg bg-orbo-darker/60 border border-orbo-gray/50 
-         text-sm font-medium text-gray-300 hover:bg-orbo-gray/60 
-         transition-all duration-200;
-}
-
-.active-filter {
-  @apply bg-orbo-purple/20 border-orbo-purple/50 text-orbo-purple;
-}
-
-/* Animations */
-@keyframes glow {
+@keyframes scroll {
   0% {
-    box-shadow: 0 0 0px rgb(155 135 245 / 0.5);
-  }
-  50% {
-    box-shadow: 0 0 30px rgb(155 135 245 / 0.5);
+    transform: translateX(0);
   }
   100% {
-    box-shadow: 0 0 0px rgb(155 135 245 / 0.5);
+    transform: translateX(-50%);
   }
 }
 
-.animate-glow {
-  animation: glow 2s ease-in-out infinite;
-}
-
-/* Scrollbar Styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-orbo-darker;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-orbo-gray/50 rounded-full;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-orbo-gray;
+.animate-scroll {
+  display: flex;
+  animation: scroll 30s linear infinite;
+  /* Double the content to create seamless loop */
+  & > * {
+    flex-shrink: 0;
+  }
+  &:hover {
+    animation-play-state: paused;
+  }
 }
