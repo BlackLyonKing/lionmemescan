@@ -45,7 +45,18 @@ serve(async (req) => {
     // Fetch fresh data from DexScreener
     console.log('Fetching fresh data from DexScreener');
     const response = await fetch('https://api.dexscreener.com/latest/dex/tokens/solana');
+    
+    if (!response.ok) {
+      console.error('DexScreener API error:', response.status, response.statusText);
+      throw new Error(`DexScreener API error: ${response.status} ${response.statusText}`);
+    }
+
     const data = await response.json();
+    console.log('DexScreener response:', JSON.stringify(data).slice(0, 200) + '...'); // Log first 200 chars
+
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format: response is not an object');
+    }
 
     if (!data.pairs || !Array.isArray(data.pairs)) {
       // If no fresh data and we have cached data (even if old), return cached
@@ -67,18 +78,19 @@ serve(async (req) => {
     // Process and format the data
     const processedData = data.pairs
       .filter((pair: any) => 
+        pair && 
         pair.baseToken && 
-        pair.priceUsd && 
-        pair.volume24h &&
+        typeof pair.priceUsd === 'string' && 
+        typeof pair.volume24h === 'string' &&
         pair.liquidity?.usd
       )
       .map((pair: any) => ({
-        name: pair.baseToken.name,
-        symbol: pair.baseToken.symbol,
-        price: parseFloat(pair.priceUsd),
-        priceChange24h: parseFloat(pair.priceChange24h || 0),
-        volume24h: parseFloat(pair.volume24h),
-        marketCap: parseFloat(pair.liquidity?.usd || 0) * parseFloat(pair.priceUsd),
+        name: pair.baseToken.name || 'Unknown',
+        symbol: pair.baseToken.symbol || 'UNKNOWN',
+        price: parseFloat(pair.priceUsd) || 0,
+        priceChange24h: parseFloat(pair.priceChange24h || '0'),
+        volume24h: parseFloat(pair.volume24h || '0'),
+        marketCap: (parseFloat(pair.liquidity?.usd || '0') * parseFloat(pair.priceUsd || '0')) || 0,
         contractAddress: pair.baseToken.address,
       }))
       .sort((a: any, b: any) => b.marketCap - a.marketCap)
