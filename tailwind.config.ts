@@ -1,14 +1,13 @@
-import type { Config } from "tailwindcss";
+import { type Config } from "tailwindcss";
 
 export default {
   darkMode: ["class"],
   content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
+    './pages/**/*.{ts,tsx}',
+    './components/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
   ],
-  prefix: "",
   theme: {
     container: {
       center: true,
@@ -19,6 +18,8 @@ export default {
     },
     extend: {
       colors: {
+        'crypto-purple': 'rgb(var(--crypto-purple) / <alpha-value>)',
+        'crypto-cyan': 'rgb(var(--crypto-cyan) / <alpha-value>)',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -52,8 +53,6 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        'crypto-purple': "hsl(255 100% 75%)",
-        'crypto-cyan': "hsl(180 100% 75%)",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -69,34 +68,12 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        shimmer: {
-          "100%": {
-            transform: "translateX(100%)",
-          },
-        },
-        glow: {
-          "0%": {
-            boxShadow: "0 0 0px rgb(155 135 245 / 0.5)",
-          },
-          "50%": {
-            boxShadow: "0 0 30px rgb(155 135 245 / 0.5)",
-          },
-          "100%": {
-            boxShadow: "0 0 0px rgb(155 135 245 / 0.5)",
-          },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        shimmer: "shimmer 2s infinite",
-        glow: "glow 2s ease-in-out infinite",
-      },
-      backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
     },
   },
   plugins: [require("tailwindcss-animate")],
-} satisfies Config;
+} satisfies Config

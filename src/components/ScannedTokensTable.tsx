@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from 'lucide-react';
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useToast } from "@/hooks/use-toast";
+import { PumpPortalService } from "@/services/PumpPortalService";
 
 interface ScannedToken {
   name: string;
@@ -29,6 +30,7 @@ interface ScannedToken {
 
 export const ScannedTokensTable = () => {
   const [tokens, setTokens] = useState<ScannedToken[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { publicKey } = useWallet();
   const { toast } = useToast();
 
@@ -42,12 +44,29 @@ export const ScannedTokensTable = () => {
       return;
     }
 
-    // Implement buy functionality
-    toast({
-      title: "Coming soon",
-      description: "Buy functionality will be implemented soon",
-      className: "bg-gradient-to-r from-purple-600 to-pink-600 text-white",
-    });
+    setIsLoading(true);
+    try {
+      const response = await PumpPortalService.executeTrade({
+        token_address: token.contract,
+        amount: 0.1, // Default amount, you might want to make this configurable
+        side: 'BUY'
+      });
+
+      toast({
+        title: "Trade executed",
+        description: "Your trade has been executed successfully",
+        className: "bg-gradient-to-r from-crypto-purple to-crypto-cyan text-white",
+      });
+    } catch (error) {
+      console.error('Trade error:', error);
+      toast({
+        title: "Trade failed",
+        description: error.message || "Failed to execute trade",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -100,9 +119,10 @@ export const ScannedTokensTable = () => {
                 <Button
                   onClick={() => handleBuy(token)}
                   variant="default"
+                  disabled={isLoading}
                   className="bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90"
                 >
-                  Buy
+                  {isLoading ? "Processing..." : "Buy"}
                 </Button>
               </TableCell>
             </TableRow>
