@@ -1,8 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { webSocketService } from "@/services/WebSocketService";
 
 interface TopToken {
   symbol: string;
@@ -15,26 +16,42 @@ interface TopToken {
 
 export const TopTokensBanner = () => {
   const navigate = useNavigate();
+  const [topTokens, setTopTokens] = useState<TopToken[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: topTokens, isLoading } = useQuery({
-    queryKey: ["topTokens"],
-    queryFn: async () => {
-      const response = await fetch("https://api.dexscreener.com/latest/dex/tokens/solana");
-      const data = await response.json();
-      return data.pairs
-        .sort((a: any, b: any) => b.priceUsd - a.priceUsd)
-        .slice(0, 20)
-        .map((pair: any) => ({
-          symbol: pair.baseToken.symbol,
-          name: pair.baseToken.name,
-          price: parseFloat(pair.priceUsd),
-          priceChange24h: parseFloat(pair.priceChange24h),
-          volume24h: parseFloat(pair.volume24h),
-          marketCap: parseFloat(pair.marketCap),
-        }));
-    },
-    refetchInterval: 60000, // Refresh every minute
-  });
+  useEffect(() => {
+    // Connect to WebSocket and subscribe to token data
+    webSocketService.connect();
+
+    const handleMessage = (data: any) => {
+      if (data.type === 'tokenData') {
+        const newToken = {
+          symbol: data.token.symbol,
+          name: data.token.name,
+          price: parseFloat(data.token.price),
+          priceChange24h: parseFloat(data.token.priceChange24h),
+          volume24h: parseFloat(data.token.volume24h),
+          marketCap: parseFloat(data.token.marketCap),
+        };
+
+        setTopTokens(current => {
+          const exists = current.find(t => t.symbol === newToken.symbol);
+          if (exists) {
+            return current.map(t => t.symbol === newToken.symbol ? newToken : t);
+          }
+          return [...current, newToken].slice(-20); // Keep last 20 tokens
+        });
+        setIsLoading(false);
+      }
+    };
+
+    webSocketService.subscribeToMessages(handleMessage);
+
+    // Cleanup on unmount
+    return () => {
+      webSocketService.unsubscribeFromMessages(handleMessage);
+    };
+  }, []);
 
   const handleTokenClick = (symbol: string) => {
     navigate(`/transaction/${symbol}`);
@@ -53,7 +70,7 @@ export const TopTokensBanner = () => {
   return (
     <div className="w-full overflow-hidden mb-8">
       <div className="flex gap-4 animate-scroll">
-        {topTokens?.map((token: TopToken, index: number) => (
+        {topTokens.map((token: TopToken, index: number) => (
           <Card
             key={index}
             className="flex-shrink-0 p-4 cursor-pointer hover:scale-105 transition-transform duration-200 bg-white/5 backdrop-blur-sm"

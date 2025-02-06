@@ -1,6 +1,9 @@
 class WebSocketService {
   private socket: WebSocket | null = null;
   private messageHandlers: ((data: any) => void)[] = [];
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectDelay = 5000;
 
   connect() {
     if (this.socket?.readyState === WebSocket.OPEN) {
@@ -12,6 +15,14 @@ class WebSocketService {
 
     this.socket.onopen = () => {
       console.log('WebSocket connected');
+      this.reconnectAttempts = 0;
+      
+      // Subscribe to token data
+      if (this.socket) {
+        this.socket.send(JSON.stringify({
+          method: "subscribeTokenTrade"
+        }));
+      }
     };
 
     this.socket.onmessage = (event) => {
@@ -26,9 +37,18 @@ class WebSocketService {
 
     this.socket.onclose = () => {
       console.log('WebSocket disconnected');
-      // Attempt to reconnect after 5 seconds
-      setTimeout(() => this.connect(), 5000);
+      this.attemptReconnect();
     };
+  }
+
+  private attemptReconnect() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+      setTimeout(() => this.connect(), this.reconnectDelay);
+    } else {
+      console.error('Max reconnection attempts reached');
+    }
   }
 
   subscribeToMessages(handler: (data: any) => void) {
