@@ -1,6 +1,8 @@
 class WebSocketService {
   private socket: WebSocket | null = null;
   private messageHandlers: ((data: any) => void)[] = [];
+  private connectHandlers: (() => void)[] = [];
+  private disconnectHandlers: (() => void)[] = [];
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 5000;
@@ -16,6 +18,7 @@ class WebSocketService {
     this.socket.onopen = () => {
       console.log('WebSocket connected');
       this.reconnectAttempts = 0;
+      this.connectHandlers.forEach(handler => handler());
       
       // Subscribe to token data
       if (this.socket) {
@@ -37,6 +40,7 @@ class WebSocketService {
 
     this.socket.onclose = () => {
       console.log('WebSocket disconnected');
+      this.disconnectHandlers.forEach(handler => handler());
       this.attemptReconnect();
     };
   }
@@ -51,30 +55,28 @@ class WebSocketService {
     }
   }
 
+  onConnect(handler: () => void) {
+    this.connectHandlers.push(handler);
+  }
+
+  offConnect(handler: () => void) {
+    this.connectHandlers = this.connectHandlers.filter(h => h !== handler);
+  }
+
+  onDisconnect(handler: () => void) {
+    this.disconnectHandlers.push(handler);
+  }
+
+  offDisconnect(handler: () => void) {
+    this.disconnectHandlers = this.disconnectHandlers.filter(h => h !== handler);
+  }
+
   subscribeToMessages(handler: (data: any) => void) {
     this.messageHandlers.push(handler);
   }
 
   unsubscribeFromMessages(handler: (data: any) => void) {
     this.messageHandlers = this.messageHandlers.filter(h => h !== handler);
-  }
-
-  subscribeToToken(tokenAddress: string) {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify({
-        method: 'subscribeTokenTrade',
-        keys: [tokenAddress]
-      }));
-    }
-  }
-
-  unsubscribeFromToken(tokenAddress: string) {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify({
-        method: 'unsubscribeTokenTrade',
-        keys: [tokenAddress]
-      }));
-    }
   }
 
   disconnect() {
