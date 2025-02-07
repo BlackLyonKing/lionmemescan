@@ -1,9 +1,14 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { webSocketService } from "@/services/WebSocketService";
+import { Button } from "@/components/ui/button";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useToast } from "@/hooks/use-toast";
+import { PumpPortalService } from "@/services/PumpPortalService";
 
 interface TopToken {
   symbol: string;
@@ -12,17 +17,18 @@ interface TopToken {
   priceChange24h: number;
   volume24h?: number;
   marketCap?: number;
+  address?: string;
 }
 
 export const TopTokensBanner = () => {
   const navigate = useNavigate();
   const [topTokens, setTopTokens] = useState<TopToken[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedToken, setSelectedToken] = useState<TopToken | null>(null);
+  const { publicKey } = useWallet();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Connect to WebSocket and subscribe to token data
-    webSocketService.connect();
-
     const handleMessage = (data: any) => {
       if (data.type === 'tokenData') {
         const newToken = {
@@ -32,6 +38,7 @@ export const TopTokensBanner = () => {
           priceChange24h: parseFloat(data.token.priceChange24h),
           volume24h: parseFloat(data.token.volume24h),
           marketCap: parseFloat(data.token.marketCap),
+          address: data.token.address,
         };
 
         setTopTokens(current => {
@@ -47,14 +54,54 @@ export const TopTokensBanner = () => {
 
     webSocketService.subscribeToMessages(handleMessage);
 
-    // Cleanup on unmount
     return () => {
       webSocketService.unsubscribeFromMessages(handleMessage);
     };
   }, []);
 
-  const handleTokenClick = (symbol: string) => {
-    navigate(`/transaction/${symbol}`);
+  const handleTokenClick = (token: TopToken) => {
+    setSelectedToken(token);
+  };
+
+  const handleBuy = async (token: TopToken) => {
+    if (!publicKey) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to make a purchase",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!token.address) {
+      toast({
+        title: "Invalid token",
+        description: "Token address not available",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await PumpPortalService.executeTrade({
+        token_address: token.address,
+        amount: 0.1,
+        side: 'BUY'
+      });
+
+      toast({
+        title: "Purchase initiated",
+        description: `Buying ${token.symbol} for 0.1 SOL`,
+        className: "bg-gradient-to-r from-purple-600 to-pink-600 text-white",
+      });
+    } catch (error) {
+      console.error('Purchase error:', error);
+      toast({
+        title: "Purchase failed",
+        description: "There was an error processing your purchase",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -70,11 +117,13 @@ export const TopTokensBanner = () => {
   return (
     <div className="w-full overflow-hidden mb-8">
       <div className="flex gap-4 animate-scroll">
-        {topTokens.map((token: TopToken, index: number) => (
+        {topTokens.map((token, index) => (
           <Card
             key={index}
-            className="flex-shrink-0 p-4 cursor-pointer hover:scale-105 transition-transform duration-200 bg-white/5 backdrop-blur-sm"
-            onClick={() => handleTokenClick(token.symbol)}
+            className={`flex-shrink-0 p-4 cursor-pointer hover:scale-105 transition-transform duration-200 bg-white/5 backdrop-blur-sm ${
+              selectedToken?.symbol === token.symbol ? 'ring-2 ring-purple-500' : ''
+            }`}
+            onClick={() => handleTokenClick(token)}
           >
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -104,6 +153,15 @@ export const TopTokensBanner = () => {
                   MCap: ${token.marketCap.toLocaleString()}
                 </div>
               )}
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleBuy(token);
+                }}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 mt-2"
+              >
+                Buy Now
+              </Button>
             </div>
           </Card>
         ))}
