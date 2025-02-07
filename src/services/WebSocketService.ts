@@ -16,7 +16,7 @@ class WebSocketService {
     }
 
     try {
-      this.socket = new WebSocket('wss://lionmemescan.com/api/data');
+      this.socket = new WebSocket(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pump-portal-websocket`);
 
       this.socket.onopen = () => {
         console.log('WebSocket connected');
@@ -106,4 +106,3 @@ class WebSocketService {
 }
 
 export const webSocketService = new WebSocketService();
-
