@@ -110,6 +110,133 @@ export type Database = {
           },
         ]
       }
+      moonshot_predictions: {
+        Row: {
+          created_at: string
+          id: number
+          predicted_price: number | null
+          prediction_reason: string | null
+          prediction_score: number
+          timeframe: string | null
+          token_id: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          predicted_price?: number | null
+          prediction_reason?: string | null
+          prediction_score: number
+          timeframe?: string | null
+          token_id?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          predicted_price?: number | null
+          prediction_reason?: string | null
+          prediction_score?: number
+          timeframe?: string | null
+          token_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moonshot_predictions_token_id_fkey"
+            columns: ["token_id"]
+            isOneToOne: false
+            referencedRelation: "pump_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pump_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          id: number
+          message: string
+          token_id: number | null
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          id?: number
+          message: string
+          token_id?: number | null
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          id?: number
+          message?: string
+          token_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pump_alerts_token_id_fkey"
+            columns: ["token_id"]
+            isOneToOne: false
+            referencedRelation: "pump_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pump_tokens: {
+        Row: {
+          address: string
+          created_at: string
+          holders: number | null
+          id: number
+          is_trending: boolean | null
+          is_verified: boolean | null
+          launch_date: string | null
+          liquidity: number | null
+          market_cap: number | null
+          name: string
+          price: number
+          price_change_24h: number
+          social_score: number | null
+          symbol: string
+          updated_at: string
+          volume_24h: number | null
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          holders?: number | null
+          id?: number
+          is_trending?: boolean | null
+          is_verified?: boolean | null
+          launch_date?: string | null
+          liquidity?: number | null
+          market_cap?: number | null
+          name: string
+          price: number
+          price_change_24h: number
+          social_score?: number | null
+          symbol: string
+          updated_at?: string
+          volume_24h?: number | null
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          holders?: number | null
+          id?: number
+          is_trending?: boolean | null
+          is_verified?: boolean | null
+          launch_date?: string | null
+          liquidity?: number | null
+          market_cap?: number | null
+          name?: string
+          price?: number
+          price_change_24h?: number
+          social_score?: number | null
+          symbol?: string
+          updated_at?: string
+          volume_24h?: number | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string | null

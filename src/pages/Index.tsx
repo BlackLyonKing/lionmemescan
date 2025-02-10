@@ -1,9 +1,8 @@
+
 import { WalletButton } from "@/components/WalletButton";
 import { useState, useEffect } from "react";
 import { TokenBanner } from "@/components/TokenBanner";
-import { BacktestingDashboard } from "@/components/BacktestingDashboard";
 import { Navigation } from "@/components/Navigation";
-import { MemecoinsTable } from "@/components/MemecoinsTable";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useTrialCountdown } from "@/hooks/useTrialCountdown";
 import { useToast } from "@/hooks/use-toast";
@@ -12,22 +11,6 @@ import { TrialAccessDialog } from "@/components/TrialAccessDialog";
 import { Search, TrendingUp, Zap, BarChart3, Rocket } from "lucide-react";
 import { webSocketService } from "@/services/WebSocketService";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-const mockMemecoins = [
-  {
-    name: "Sample Coin 1",
-    symbol: "SAMP1",
-    marketCap: 1000000,
-    socialScore: 85,
-    dexStatus: "unpaid" as const,
-    meta: ["trending", "new"],
-    threadUrl: "https://example.com",
-    threadComments: 150,
-    bundledBuys: 25,
-    riskScore: 3,
-    graduated: false
-  },
-];
 
 const Index = () => {
   const [hasAccess, setHasAccess] = useState(false);
@@ -72,10 +55,8 @@ const Index = () => {
   };
 
   useEffect(() => {
-    // Connect to WebSocket when component mounts
     webSocketService.connect();
 
-    // Subscribe to WebSocket messages
     const handleMessage = (data: any) => {
       if (data.type === 'newToken') {
         setLatestToken({
@@ -94,7 +75,6 @@ const Index = () => {
 
     webSocketService.subscribeToMessages(handleMessage);
 
-    // Cleanup on unmount
     return () => {
       webSocketService.unsubscribeFromMessages(handleMessage);
       webSocketService.disconnect();
@@ -102,7 +82,9 @@ const Index = () => {
   }, [toast]);
 
   return (
-    <div className="min-h-screen bg-gradient-radial from-orbo-dark to-orbo-darker text-foreground">
+    <div className="min-h-screen bg-gradient-radial from-orbo
+
+-dark to-orbo-darker text-foreground">
       <Navigation />
       
       <div className="container mx-auto pt-24 space-y-8 px-4">
@@ -111,8 +93,8 @@ const Index = () => {
             PumpFun Scanner
           </h1>
           <p className="text-xl text-orbo-lightGray max-w-2xl mx-auto mb-8">
-            Your advanced toolkit for discovering and analyzing the next big memecoins on Solana. 
-            Get real-time insights, track social metrics, and stay ahead of the market.
+            Your advanced toolkit for discovering and analyzing new tokens on PumpFun. 
+            Get real-time insights, track metrics, and stay ahead of the market.
           </p>
 
           {!publicKey && (
@@ -141,47 +123,13 @@ const Index = () => {
           </Alert>
         )}
 
-        <div className="search-container mb-12">
-          <Search className="search-icon" />
-          <input
-            type="text"
-            placeholder="Search by token name, symbol, or contract address..."
-            className="search-input"
-          />
-          <div className="flex gap-4 mt-4 justify-center flex-wrap">
-            <button className="filter-button active-filter">
-              <TrendingUp className="w-4 h-4 inline-block mr-2" />
-              Trending
-            </button>
-            <button className="filter-button">
-              <Zap className="w-4 h-4 inline-block mr-2" />
-              New Listings
-            </button>
-            <button className="filter-button">
-              <BarChart3 className="w-4 h-4 inline-block mr-2" />
-              Top Gainers
-            </button>
-            <button className="filter-button">
-              <Rocket className="w-4 h-4 inline-block mr-2" />
-              About to Graduate
-            </button>
-          </div>
-        </div>
+        <TokenBanner hasAccess={hasAccess || isAdmin} />
 
         <TrialAccessDialog 
           open={showTerms} 
           onOpenChange={setShowTerms}
           onAccessGranted={() => setHasAccess(true)}
         />
-
-        <TokenBanner hasAccess={hasAccess || isAdmin} />
-
-        {(hasAccess || isAdmin) && (
-          <div className="space-y-8">
-            <BacktestingDashboard />
-            <MemecoinsTable coins={mockMemecoins} />
-          </div>
-        )}
       </div>
     </div>
   );

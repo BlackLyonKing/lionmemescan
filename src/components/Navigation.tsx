@@ -1,3 +1,4 @@
+
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
 import { Menu, Moon, Sun } from "lucide-react";
 import { Button } from "./ui/button";
@@ -57,13 +58,16 @@ export const Navigation = () => {
                       <NavigationMenuLink href="/">Home</NavigationMenuLink>
                     </NavigationMenuItem>
                     <NavigationMenuItem>
+                      <NavigationMenuLink href="/pumpfun">PumpFun</NavigationMenuLink>
+                    </NavigationMenuItem>
+                    <NavigationMenuItem>
+                      <NavigationMenuLink href="/moonshot">Moonshot</NavigationMenuLink>
+                    </NavigationMenuItem>
+                    <NavigationMenuItem>
                       <NavigationMenuLink href="/portfolio">Portfolio</NavigationMenuLink>
                     </NavigationMenuItem>
                     <NavigationMenuItem>
                       <NavigationMenuLink href="/alerts">Alerts</NavigationMenuLink>
-                    </NavigationMenuItem>
-                    <NavigationMenuItem>
-                      <NavigationMenuLink href="/scan">Scan</NavigationMenuLink>
                     </NavigationMenuItem>
                     <NavigationMenuItem>
                       <NavigationMenuLink href="/profile">Profile</NavigationMenuLink>

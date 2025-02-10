@@ -1,3 +1,4 @@
+
 import { BrowserRouter } from "react-router-dom";
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -11,11 +12,12 @@ import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import PumpFun from "./pages/PumpFun";
+import Moonshot from "./pages/Moonshot";
 import About from "./pages/About";
 import Alerts from "./pages/Alerts";
 import Portfolio from "./pages/Portfolio";
 import Profile from "./pages/Profile";
-import Scan from "./pages/Scan";
 import Terms from "./pages/Terms";
 import Transaction from "./pages/Transaction";
 import React from 'react';
@@ -29,8 +31,8 @@ const wallets = [
     options: {
       projectId: "your-project-id",
       metadata: {
-        name: "Memecoin Scanner",
-        description: "Scan and analyze memecoins",
+        name: "PumpFun Scanner",
+        description: "Track and analyze memecoins",
         url: window.location.origin,
         icons: ["https://your-app-icon.com"]
       }
@@ -50,11 +52,12 @@ const App = () => (
               <BrowserRouter>
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/pumpfun" element={<PumpFun />} />
+                  <Route path="/moonshot" element={<Moonshot />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/portfolio" element={<Portfolio />} />
                   <Route path="/profile" element={<Profile />} />
-                  <Route path="/scan" element={<Scan />} />
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/transaction/:tokenSymbol" element={<Transaction />} />
                 </Routes>
