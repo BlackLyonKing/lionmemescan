@@ -134,6 +134,45 @@ export type Database = {
         }
         Relationships: []
       }
+      tokens: {
+        Row: {
+          address: string
+          created_at: string
+          id: number
+          market_cap: number | null
+          name: string
+          price: number
+          price_change_24h: number
+          symbol: string
+          updated_at: string
+          volume_24h: number | null
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          id?: number
+          market_cap?: number | null
+          name: string
+          price: number
+          price_change_24h: number
+          symbol: string
+          updated_at?: string
+          volume_24h?: number | null
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: number
+          market_cap?: number | null
+          name?: string
+          price?: number
+          price_change_24h?: number
+          symbol?: string
+          updated_at?: string
+          volume_24h?: number | null
+        }
+        Relationships: []
+      }
       trial_attempts: {
         Row: {
           created_at: string | null
