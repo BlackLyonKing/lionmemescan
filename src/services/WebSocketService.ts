@@ -16,17 +16,21 @@ class WebSocketService {
     }
 
     try {
-      this.socket = new WebSocket(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pump-portal-websocket`);
+      // Connect directly to PumpPortal WebSocket
+      this.socket = new WebSocket('wss://pumpportal.fun/api/data');
 
       this.socket.onopen = () => {
-        console.log('WebSocket connected');
+        console.log('WebSocket connected to PumpPortal');
         this.reconnectAttempts = 0;
         this.connectHandlers.forEach(handler => handler());
         
-        // Subscribe to token data
+        // Subscribe to both token trade and creation data
         if (this.socket) {
           this.socket.send(JSON.stringify({
             method: "subscribeTokenTrade"
+          }));
+          this.socket.send(JSON.stringify({
+            method: "subscribeTokenCreation"
           }));
         }
       };
@@ -45,7 +49,7 @@ class WebSocketService {
       };
 
       this.socket.onclose = () => {
-        console.log('WebSocket disconnected');
+        console.log('WebSocket disconnected from PumpPortal');
         this.disconnectHandlers.forEach(handler => handler());
         this.attemptReconnect();
       };

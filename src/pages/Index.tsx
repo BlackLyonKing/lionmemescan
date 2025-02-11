@@ -82,9 +82,7 @@ const Index = () => {
   }, [toast]);
 
   return (
-    <div className="min-h-screen bg-gradient-radial from-orbo
-
--dark to-orbo-darker text-foreground">
+    <div className="min-h-screen bg-gradient-radial from-orbo-dark to-orbo-darker text-foreground">
       <Navigation />
       
       <div className="container mx-auto pt-24 space-y-8 px-4">
@@ -93,8 +91,10 @@ const Index = () => {
             PumpFun Scanner
           </h1>
           <p className="text-xl text-orbo-lightGray max-w-2xl mx-auto mb-8">
-            Your advanced toolkit for discovering and analyzing new tokens on PumpFun. 
-            Get real-time insights, track metrics, and stay ahead of the market.
+            Advanced real-time analytics for PumpFun tokens. Track new token launches, 
+            monitor trading activity, and receive instant alerts on trending tokens. 
+            Our platform provides professional-grade tools for identifying early opportunities 
+            and analyzing market movements on the PumpFun ecosystem.
           </p>
 
           {!publicKey && (
