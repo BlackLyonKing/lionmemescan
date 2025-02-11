@@ -3,9 +3,9 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { webSocketService } from "@/services/WebSocketService";
-import { Button } from "@/components/ui/button";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useToast } from "@/hooks/use-toast";
 import { PumpPortalService } from "@/services/PumpPortalService";
@@ -25,6 +25,7 @@ export const TopTokensBanner = () => {
   const [topTokens, setTopTokens] = useState<TopToken[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedToken, setSelectedToken] = useState<TopToken | null>(null);
+  const [isTradingLoading, setIsTradingLoading] = useState(false);
   const { publicKey } = useWallet();
   const { toast } = useToast();
 
@@ -59,15 +60,11 @@ export const TopTokensBanner = () => {
     };
   }, []);
 
-  const handleTokenClick = (token: TopToken) => {
-    setSelectedToken(token);
-  };
-
-  const handleBuy = async (token: TopToken) => {
+  const handleTrade = async (token: TopToken, action: 'buy' | 'sell') => {
     if (!publicKey) {
       toast({
         title: "Wallet not connected",
-        description: "Please connect your wallet to make a purchase",
+        description: "Please connect your wallet to trade",
         variant: "destructive",
       });
       return;
@@ -82,25 +79,36 @@ export const TopTokensBanner = () => {
       return;
     }
 
+    setIsTradingLoading(true);
     try {
       const response = await PumpPortalService.executeTrade({
-        token_address: token.address,
-        amount: 0.1,
-        side: 'BUY'
+        action,
+        mint: token.address,
+        amount: 0.1, // Default amount in SOL
+        denominatedInSol: true,
+        slippage: 10,
+        priorityFee: 0.005,
+        pool: 'pump'
       });
 
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
       toast({
-        title: "Purchase initiated",
-        description: `Buying ${token.symbol} for 0.1 SOL`,
-        className: "bg-gradient-to-r from-purple-600 to-pink-600 text-white",
+        title: `${action.toUpperCase()} Order Executed`,
+        description: `Transaction signature: ${response.signature?.slice(0, 8)}...`,
+        className: "bg-gradient-to-r from-crypto-purple to-crypto-cyan text-white",
       });
     } catch (error) {
-      console.error('Purchase error:', error);
+      console.error('Trade error:', error);
       toast({
-        title: "Purchase failed",
-        description: "There was an error processing your purchase",
+        title: "Trade failed",
+        description: error.message || "Failed to execute trade",
         variant: "destructive",
       });
+    } finally {
+      setIsTradingLoading(false);
     }
   };
 
@@ -120,10 +128,7 @@ export const TopTokensBanner = () => {
         {topTokens.map((token, index) => (
           <Card
             key={index}
-            className={`flex-shrink-0 p-4 cursor-pointer hover:scale-105 transition-transform duration-200 bg-white/5 backdrop-blur-sm ${
-              selectedToken?.symbol === token.symbol ? 'ring-2 ring-purple-500' : ''
-            }`}
-            onClick={() => handleTokenClick(token)}
+            className="flex-shrink-0 p-4 cursor-pointer hover:scale-105 transition-transform duration-200 bg-white/5 backdrop-blur-sm"
           >
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -153,15 +158,29 @@ export const TopTokensBanner = () => {
                   MCap: ${token.marketCap.toLocaleString()}
                 </div>
               )}
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleBuy(token);
-                }}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 mt-2"
-              >
-                Buy Now
-              </Button>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTrade(token, 'buy');
+                  }}
+                  disabled={isTradingLoading}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:opacity-90"
+                >
+                  Buy
+                </Button>
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTrade(token, 'sell');
+                  }}
+                  disabled={isTradingLoading}
+                  variant="outline"
+                  className="flex-1 border-red-500 text-red-500 hover:bg-red-500/10"
+                >
+                  Sell
+                </Button>
+              </div>
             </div>
           </Card>
         ))}

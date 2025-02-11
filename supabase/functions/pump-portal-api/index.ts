@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -6,9 +7,13 @@ const corsHeaders = {
 }
 
 interface TradeRequest {
-  token_address: string;
+  action: 'buy' | 'sell';
+  mint: string;
   amount: number;
-  side: 'BUY' | 'SELL';
+  denominatedInSol: boolean;
+  slippage: number;
+  priorityFee: number;
+  pool: 'pump' | 'raydium' | 'auto';
 }
 
 serve(async (req) => {
@@ -23,18 +28,22 @@ serve(async (req) => {
       throw new Error('API key not configured')
     }
 
-    const { token_address, amount, side } = await req.json() as TradeRequest
+    const request = await req.json() as TradeRequest
 
-    const response = await fetch('https://pumpportal.fun/api/trade-local', {
+    const response = await fetch('https://pumpportal.fun/api/trade', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'api-key': apiKey,
       },
       body: JSON.stringify({
-        token_address,
-        amount,
-        side,
+        action: request.action,
+        mint: request.mint,
+        amount: request.amount,
+        denominatedInSol: request.denominatedInSol.toString(),
+        slippage: request.slippage,
+        priorityFee: request.priorityFee,
+        pool: request.pool,
       }),
     })
 
