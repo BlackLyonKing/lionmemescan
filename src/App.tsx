@@ -13,7 +13,7 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import PumpFun from "./pages/PumpFun";
-import Moonshot from "./pages/Moonshot";
+import MemeScan from "./pages/MemeScan";
 import About from "./pages/About";
 import Alerts from "./pages/Alerts";
 import Portfolio from "./pages/Portfolio";
@@ -53,7 +53,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/pumpfun" element={<PumpFun />} />
-                  <Route path="/moonshot" element={<Moonshot />} />
+                  <Route path="/memescan" element={<MemeScan />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/alerts" element={<Alerts />} />
                   <Route path="/portfolio" element={<Portfolio />} />
