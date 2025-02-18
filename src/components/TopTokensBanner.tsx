@@ -28,16 +28,31 @@ export const TopTokensBanner = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('Initializing WebSocket connection...');
+    webSocketService.connect();
+
+    const handleConnect = () => {
+      console.log('Connected to WebSocket');
+      setIsLoading(true);
+    };
+
+    const handleDisconnect = () => {
+      console.log('Disconnected from WebSocket');
+      setIsLoading(true);
+    };
+
     const handleMessage = (data: any) => {
-      if (data.type === 'tokenData') {
+      console.log('Received message:', data);
+
+      if (data.type === 'token') {
         const newToken = {
-          symbol: data.token.symbol,
-          name: data.token.name,
-          price: parseFloat(data.token.price),
-          priceChange24h: parseFloat(data.token.priceChange24h),
-          volume24h: parseFloat(data.token.volume24h),
-          marketCap: parseFloat(data.token.marketCap),
-          address: data.token.address,
+          symbol: data.data.symbol,
+          name: data.data.name,
+          price: parseFloat(data.data.price || '0'),
+          priceChange24h: parseFloat(data.data.priceChange24h || '0'),
+          volume24h: parseFloat(data.data.volume24h || '0'),
+          marketCap: parseFloat(data.data.marketCap || '0'),
+          address: data.data.address,
         };
 
         setTopTokens(current => {
@@ -49,13 +64,12 @@ export const TopTokensBanner = () => {
         });
         setIsLoading(false);
       } else if (data.type === 'newToken') {
-        // Handle new token creation
         const newToken = {
-          symbol: data.token.symbol,
-          name: data.token.name,
-          price: parseFloat(data.token.price || '0'),
+          symbol: data.data.symbol,
+          name: data.data.name,
+          price: parseFloat(data.data.price || '0'),
           priceChange24h: 0,
-          address: data.token.address,
+          address: data.data.address,
         };
         
         setTopTokens(current => [newToken, ...current].slice(0, 20));
@@ -67,9 +81,15 @@ export const TopTokensBanner = () => {
       }
     };
 
+    webSocketService.onConnect(handleConnect);
+    webSocketService.onDisconnect(handleDisconnect);
     webSocketService.subscribeToMessages(handleMessage);
+
     return () => {
+      webSocketService.offConnect(handleConnect);
+      webSocketService.offDisconnect(handleDisconnect);
       webSocketService.unsubscribeFromMessages(handleMessage);
+      webSocketService.disconnect();
     };
   }, [toast]);
 

@@ -16,29 +16,30 @@ class WebSocketService {
     }
 
     try {
-      // Connect directly to PumpPortal WebSocket
-      this.socket = new WebSocket('wss://pumpportal.fun/api/data');
+      this.socket = new WebSocket('wss://pumpportal.fun/ws');
 
       this.socket.onopen = () => {
-        console.log('WebSocket connected to PumpPortal');
+        console.log('WebSocket connected successfully');
         this.reconnectAttempts = 0;
         this.connectHandlers.forEach(handler => handler());
         
-        // Subscribe to both token trade and creation data
+        // Subscribe to token data and creation events
         if (this.socket) {
           this.socket.send(JSON.stringify({
-            method: "subscribeTokenTrade"
-          }));
-          this.socket.send(JSON.stringify({
-            method: "subscribeTokenCreation"
+            type: 'subscribe',
+            channel: 'tokens'
           }));
         }
       };
 
       this.socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        console.log('Received WebSocket message:', data);
-        this.messageHandlers.forEach(handler => handler(data));
+        try {
+          const data = JSON.parse(event.data);
+          console.log('Received WebSocket message:', data);
+          this.messageHandlers.forEach(handler => handler(data));
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error);
+        }
       };
 
       this.socket.onerror = (error) => {
@@ -49,7 +50,7 @@ class WebSocketService {
       };
 
       this.socket.onclose = () => {
-        console.log('WebSocket disconnected from PumpPortal');
+        console.log('WebSocket connection closed');
         this.disconnectHandlers.forEach(handler => handler());
         this.attemptReconnect();
       };
@@ -73,6 +74,14 @@ class WebSocketService {
     }
   }
 
+  subscribeToMessages(handler: (data: any) => void) {
+    this.messageHandlers.push(handler);
+  }
+
+  unsubscribeFromMessages(handler: (data: any) => void) {
+    this.messageHandlers = this.messageHandlers.filter(h => h !== handler);
+  }
+
   onConnect(handler: () => void) {
     this.connectHandlers.push(handler);
   }
@@ -87,14 +96,6 @@ class WebSocketService {
 
   offDisconnect(handler: () => void) {
     this.disconnectHandlers = this.disconnectHandlers.filter(h => h !== handler);
-  }
-
-  subscribeToMessages(handler: (data: any) => void) {
-    this.messageHandlers.push(handler);
-  }
-
-  unsubscribeFromMessages(handler: (data: any) => void) {
-    this.messageHandlers = this.messageHandlers.filter(h => h !== handler);
   }
 
   disconnect() {
