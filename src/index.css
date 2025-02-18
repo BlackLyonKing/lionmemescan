@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -34,9 +35,6 @@
     --ring: 216 34% 17%;
 
     --radius: 0.5rem;
-
-    --crypto-purple: 255 100% 75%;
-    --crypto-cyan: 180 100% 75%;
   }
 }
 
@@ -45,7 +43,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
@@ -56,50 +54,6 @@
   }
 
   .gradient-text {
-    @apply bg-gradient-to-r from-crypto-purple to-crypto-cyan bg-clip-text text-transparent;
-  }
-
-  .search-container {
-    @apply relative;
-  }
-
-  .search-input {
-    @apply w-full px-12 py-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg 
-           text-lg placeholder:text-muted-foreground focus:outline-none focus:ring-2 
-           focus:ring-crypto-purple/50 transition-all duration-300;
-  }
-
-  .search-icon {
-    @apply absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground;
-  }
-
-  .filter-button {
-    @apply px-4 py-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm
-           hover:bg-white/10 transition-all duration-300 text-sm font-medium;
-  }
-
-  .filter-button.active-filter {
-    @apply border-crypto-purple text-crypto-purple;
-  }
-}
-
-@keyframes scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.animate-scroll {
-  display: flex;
-  animation: scroll 30s linear infinite;
-  /* Double the content to create seamless loop */
-  & > * {
-    flex-shrink: 0;
-  }
-  &:hover {
-    animation-play-state: paused;
+    @apply bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent;
   }
 }
