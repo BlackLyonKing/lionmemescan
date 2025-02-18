@@ -24,8 +24,6 @@ export const TopTokensBanner = () => {
   const navigate = useNavigate();
   const [topTokens, setTopTokens] = useState<TopToken[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedToken, setSelectedToken] = useState<TopToken | null>(null);
-  const [isTradingLoading, setIsTradingLoading] = useState(false);
   const { publicKey } = useWallet();
   const { toast } = useToast();
 
@@ -50,15 +48,30 @@ export const TopTokensBanner = () => {
           return [...current, newToken].slice(-20); // Keep last 20 tokens
         });
         setIsLoading(false);
+      } else if (data.type === 'newToken') {
+        // Handle new token creation
+        const newToken = {
+          symbol: data.token.symbol,
+          name: data.token.name,
+          price: parseFloat(data.token.price || '0'),
+          priceChange24h: 0,
+          address: data.token.address,
+        };
+        
+        setTopTokens(current => [newToken, ...current].slice(0, 20));
+        toast({
+          title: "New Token Created",
+          description: `${newToken.name} (${newToken.symbol}) has been created`,
+          className: "bg-gradient-to-r from-crypto-purple to-crypto-cyan text-white",
+        });
       }
     };
 
     webSocketService.subscribeToMessages(handleMessage);
-
     return () => {
       webSocketService.unsubscribeFromMessages(handleMessage);
     };
-  }, []);
+  }, [toast]);
 
   const handleTrade = async (token: TopToken, action: 'buy' | 'sell') => {
     if (!publicKey) {
@@ -79,12 +92,11 @@ export const TopTokensBanner = () => {
       return;
     }
 
-    setIsTradingLoading(true);
     try {
       const response = await PumpPortalService.executeTrade({
         action,
         mint: token.address,
-        amount: 0.1, // Default amount in SOL
+        amount: 0.1,
         denominatedInSol: true,
         slippage: 10,
         priorityFee: 0.005,
@@ -107,8 +119,6 @@ export const TopTokensBanner = () => {
         description: error.message || "Failed to execute trade",
         variant: "destructive",
       });
-    } finally {
-      setIsTradingLoading(false);
     }
   };
 
@@ -116,7 +126,7 @@ export const TopTokensBanner = () => {
     return (
       <div className="flex gap-4 overflow-hidden py-4">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-48 flex-shrink-0" />
+          <Skeleton key={i} className="h-32 w-64 flex-shrink-0" />
         ))}
       </div>
     );
@@ -124,11 +134,11 @@ export const TopTokensBanner = () => {
 
   return (
     <div className="w-full overflow-hidden mb-8">
-      <div className="flex gap-4 animate-scroll">
+      <div className="flex gap-4 animate-scroll py-4">
         {topTokens.map((token, index) => (
           <Card
-            key={index}
-            className="flex-shrink-0 p-4 cursor-pointer hover:scale-105 transition-transform duration-200 bg-white/5 backdrop-blur-sm"
+            key={`${token.symbol}-${index}`}
+            className="flex-shrink-0 w-64 p-4 cursor-pointer bg-white/5 backdrop-blur-sm border-white/10 hover:border-crypto-purple/50 transition-all duration-200"
           >
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -146,7 +156,9 @@ export const TopTokensBanner = () => {
                   </span>
                 </div>
               </div>
-              <div className="text-sm text-muted-foreground">{token.name}</div>
+              <div className="text-sm text-muted-foreground truncate" title={token.name}>
+                {token.name}
+              </div>
               <div className="text-sm font-medium">${token.price.toFixed(6)}</div>
               {token.volume24h && (
                 <div className="text-xs text-muted-foreground">
@@ -160,21 +172,13 @@ export const TopTokensBanner = () => {
               )}
               <div className="flex gap-2 mt-2">
                 <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleTrade(token, 'buy');
-                  }}
-                  disabled={isTradingLoading}
+                  onClick={() => handleTrade(token, 'buy')}
                   className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:opacity-90"
                 >
                   Buy
                 </Button>
                 <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleTrade(token, 'sell');
-                  }}
-                  disabled={isTradingLoading}
+                  onClick={() => handleTrade(token, 'sell')}
                   variant="outline"
                   className="flex-1 border-red-500 text-red-500 hover:bg-red-500/10"
                 >
