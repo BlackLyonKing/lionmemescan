@@ -8,6 +8,8 @@ class WebSocketService {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 5000;
   private reconnectTimer: number | null = null;
+  private lastMessageTime: number = Date.now();
+  private heartbeatInterval: number | null = null;
 
   connect() {
     if (this.socket?.readyState === WebSocket.OPEN) {
@@ -21,13 +23,19 @@ class WebSocketService {
       this.socket.onopen = () => {
         console.log('WebSocket connected successfully');
         this.reconnectAttempts = 0;
+        this.lastMessageTime = Date.now();
+        this.startHeartbeat();
         this.connectHandlers.forEach(handler => handler());
         
         // Subscribe to token data and creation events
         if (this.socket) {
           this.socket.send(JSON.stringify({
             type: 'subscribe',
-            channel: 'tokens'
+            channel: 'tokens',
+            filters: {
+              minMarketCap: 0,
+              maxAge: '24h'
+            }
           }));
         }
       };
@@ -35,8 +43,20 @@ class WebSocketService {
       this.socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          this.lastMessageTime = Date.now();
           console.log('Received WebSocket message:', data);
-          this.messageHandlers.forEach(handler => handler(data));
+          
+          // Handle different message types
+          if (data.type === 'token' || data.type === 'token_update') {
+            this.messageHandlers.forEach(handler => handler({
+              type: data.type,
+              data: {
+                ...data.data,
+                createdAt: data.data.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              }
+            }));
+          }
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
         }
@@ -51,6 +71,7 @@ class WebSocketService {
 
       this.socket.onclose = () => {
         console.log('WebSocket connection closed');
+        this.stopHeartbeat();
         this.disconnectHandlers.forEach(handler => handler());
         this.attemptReconnect();
       };
@@ -58,6 +79,34 @@ class WebSocketService {
       console.error('WebSocket connection error:', error);
       this.attemptReconnect();
     }
+  }
+
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    this.heartbeatInterval = window.setInterval(() => {
+      const now = Date.now();
+      if (now - this.lastMessageTime > 30000) { // 30 seconds without messages
+        console.log('No messages received for 30 seconds, reconnecting...');
+        this.reconnect();
+      }
+      
+      // Send heartbeat
+      if (this.socket?.readyState === WebSocket.OPEN) {
+        this.socket.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 15000); // Check every 15 seconds
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  private reconnect() {
+    this.disconnect();
+    this.connect();
   }
 
   private attemptReconnect() {
@@ -99,6 +148,7 @@ class WebSocketService {
   }
 
   disconnect() {
+    this.stopHeartbeat();
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;

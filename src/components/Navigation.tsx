@@ -61,7 +61,7 @@ export const Navigation = () => {
                       <NavigationMenuLink href="/pumpfun">PumpFun</NavigationMenuLink>
                     </NavigationMenuItem>
                     <NavigationMenuItem>
-                      <NavigationMenuLink href="/moonshot">Moonshot</NavigationMenuLink>
+                      <NavigationMenuLink href="/memescan">MemeScan</NavigationMenuLink>
                     </NavigationMenuItem>
                     <NavigationMenuItem>
                       <NavigationMenuLink href="/portfolio">Portfolio</NavigationMenuLink>
