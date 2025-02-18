@@ -72,6 +72,9 @@ export const Navigation = () => {
                     <NavigationMenuItem>
                       <NavigationMenuLink href="/profile">Profile</NavigationMenuLink>
                     </NavigationMenuItem>
+                    <NavigationMenuItem>
+                      <NavigationMenuLink href="/terms">Terms & Conditions</NavigationMenuLink>
+                    </NavigationMenuItem>
                   </NavigationMenuList>
                 </NavigationMenu>
                 
