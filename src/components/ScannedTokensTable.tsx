@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import {
   Table,
@@ -47,9 +48,13 @@ export const ScannedTokensTable = () => {
     setIsLoading(true);
     try {
       const response = await PumpPortalService.executeTrade({
-        token_address: token.contract,
-        amount: 0.1, // Default amount, you might want to make this configurable
-        side: 'BUY'
+        action: 'buy',
+        mint: token.contract, // Changed from token_address to mint
+        amount: 0.1,
+        denominatedInSol: true,
+        slippage: 10,
+        priorityFee: 0.005,
+        pool: 'pump'
       });
 
       toast({
