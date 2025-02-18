@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import {
   Table,
@@ -8,7 +9,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from 'lucide-react';
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useToast } from "@/hooks/use-toast";
@@ -34,11 +34,11 @@ export const ScannedTokensTable = () => {
   const { publicKey } = useWallet();
   const { toast } = useToast();
 
-  const handleBuy = async (token: ScannedToken) => {
+  const handleTrade = async (token: ScannedToken, action: 'buy' | 'sell') => {
     if (!publicKey) {
       toast({
         title: "Wallet not connected",
-        description: "Please connect your wallet to make a purchase",
+        description: "Please connect your wallet to trade",
         variant: "destructive",
       });
       return;
@@ -47,7 +47,7 @@ export const ScannedTokensTable = () => {
     setIsLoading(true);
     try {
       const response = await PumpPortalService.executeTrade({
-        action: 'buy',
+        action,
         mint: token.contract,
         amount: 0.1,
         denominatedInSol: true,
@@ -56,9 +56,13 @@ export const ScannedTokensTable = () => {
         pool: 'pump'
       });
 
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
       toast({
-        title: "Trade executed",
-        description: "Your trade has been executed successfully",
+        title: `${action.toUpperCase()} Order Executed`,
+        description: `Transaction signature: ${response.signature?.slice(0, 8)}...`,
         className: "bg-gradient-to-r from-crypto-purple to-crypto-cyan text-white",
       });
     } catch (error) {
@@ -120,14 +124,23 @@ export const ScannedTokensTable = () => {
                 </div>
               </TableCell>
               <TableCell>
-                <Button
-                  onClick={() => handleBuy(token)}
-                  variant="default"
-                  disabled={isLoading}
-                  className="bg-gradient-to-r from-crypto-purple to-crypto-cyan hover:opacity-90"
-                >
-                  {isLoading ? "Processing..." : "Buy"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleTrade(token, 'buy')}
+                    disabled={isLoading}
+                    className="bg-gradient-to-r from-green-500 to-green-600 hover:opacity-90"
+                  >
+                    Buy
+                  </Button>
+                  <Button
+                    onClick={() => handleTrade(token, 'sell')}
+                    disabled={isLoading}
+                    variant="outline"
+                    className="border-red-500 text-red-500 hover:bg-red-500/10"
+                  >
+                    Sell
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
